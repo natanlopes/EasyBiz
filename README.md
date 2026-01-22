@@ -176,7 +176,16 @@ Isso permitirá:
 
 📌 *Swagger será configurado na próxima etapa.*
 
----
+## Usamos anotações do springdoc-openapi:
+
+@Tag
+
+@Operation
+
+@ApiResponses
+
+@Scheme
+
 
 ## 🛠️ Status do projeto
 
