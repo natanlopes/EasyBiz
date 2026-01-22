@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 @Schema(description = "Dados necessários para criação de um negócio")
 public record CriarNegocioDTO(
-		 @Schema(example = "1", description = "ID do usuário dono do negócio")
+		@Schema(example = "1", description = "ID do usuário dono do negócio")
         @NotNull Long usuarioId,
         @Schema(example = "EasyBiz Barbearia", description = "Nome do negócio")
         @NotBlank String nome,

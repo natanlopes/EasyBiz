@@ -30,4 +30,45 @@ public class Mensagem {
     private String conteudo;
 
     private LocalDateTime enviadoEm;
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public PedidoServico getPedidoServico() {
+		return pedidoServico;
+	}
+
+	public void setPedidoServico(PedidoServico pedidoServico) {
+		this.pedidoServico = pedidoServico;
+	}
+
+	public Usuario getRemetente() {
+		return remetente;
+	}
+
+	public void setRemetente(Usuario remetente) {
+		this.remetente = remetente;
+	}
+
+	public String getConteudo() {
+		return conteudo;
+	}
+
+	public void setConteudo(String conteudo) {
+		this.conteudo = conteudo;
+	}
+
+	public LocalDateTime getEnviadoEm() {
+		return enviadoEm;
+	}
+
+	public void setEnviadoEm(LocalDateTime enviadoEm) {
+		this.enviadoEm = enviadoEm;
+	}
+    
 }

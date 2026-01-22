@@ -175,6 +175,7 @@ Isso permitirá:
 * Facilitar integração com frontend
 
 📌 *Swagger será configurado na próxima etapa.*
+http://localhost:8080/swagger-ui/index.html
 
 ## Usamos anotações do springdoc-openapi:
 
