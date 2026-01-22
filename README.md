@@ -44,6 +44,14 @@ O **EasyBiz** resolve isso ao oferecer:
 * Recebe pedidos de serviço
 * Negocia diretamente com o cliente via chat
 
+## 🚀 Tecnologias
+- **Java 17+**
+- **Spring Boot 3**
+- **PostgreSQL** (Docker)
+- **Spring Data JPA**
+- **Lombok**
+- **Spring Security** (Básico configurado)
+
 ### 🔹 Cliente
 
 * Busca serviços por categoria
