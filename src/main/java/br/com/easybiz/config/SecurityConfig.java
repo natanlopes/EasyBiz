@@ -41,6 +41,7 @@ public class SecurityConfig {
                 .requestMatchers("/negocios/**").permitAll()
                 .requestMatchers("/clientes/**").permitAll()
                 .requestMatchers("/pedidos/**").permitAll()
+                .requestMatchers("/ws/**").permitAll()
                 .requestMatchers("/error").permitAll() // <--- ADICIONE ISSO AQUI
                 // Qualquer outra rota exige auth
                 .anyRequest().authenticated()

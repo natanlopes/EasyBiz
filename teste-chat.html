@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EasyBiz Chat Teste</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        #conversa { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; }
+        .msg { padding: 5px; margin: 5px 0; border-radius: 5px; }
+        .eu { background-color: #dcf8c6; text-align: right; }
+        .outro { background-color: #f1f0f0; }
+    </style>
+</head>
+<body>
+    <h2>💬 Chat EasyBiz - Pedido #1</h2>
+    
+    <div>
+        <label>ID Usuário:</label> <input type="number" id="usuarioId" value="1">
+        <button onclick="conectar()">1. Conectar</button>
+    </div>
+    <hr/>
+    <div id="conversa"></div>
+    <div>
+        <input type="text" id="conteudo" placeholder="Digite sua mensagem..." style="width: 70%;">
+        <button onclick="enviar()">2. Enviar</button>
+    </div>
+
+    <script>
+        var stompClient = null;
+        var pedidoId = 1; // Estamos testando o Pedido 1
+
+        function conectar() {
+            var socket = new SockJS('http://localhost:8080/ws');
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function (frame) {
+                console.log('Conectado: ' + frame);
+                alert("Conectado ao Servidor!");
+                
+                // Se inscreve para OUVIR as mensagens do Pedido 1
+                stompClient.subscribe('/topic/mensagens/' + pedidoId, function (mensagem) {
+                    mostrarMensagem(JSON.parse(mensagem.body));
+                });
+            });
+        }
+
+        function enviar() {
+            var usuarioId = document.getElementById('usuarioId').value;
+            var conteudo = document.getElementById('conteudo').value;
+            
+            // Envia para o servidor
+            stompClient.send("/app/chat/" + pedidoId, {}, JSON.stringify({
+                'usuarioId': usuarioId,
+                'conteudo': conteudo
+            }));
+            document.getElementById('conteudo').value = "";
+        }
+
+        function mostrarMensagem(msg) {
+            var div = document.getElementById('conversa');
+            var novaLinha = document.createElement('div');
+            // Só pra diferenciar visualmente quem mandou
+            var classe = (msg.remetenteId == document.getElementById('usuarioId').value) ? 'eu' : 'outro';
+            
+            novaLinha.className = 'msg ' + classe;
+            novaLinha.innerHTML = "<b>" + msg.remetenteNome + ":</b> " + msg.conteudo;
+            div.appendChild(novaLinha);
+        }
+    </script>
+</body>
+</html>

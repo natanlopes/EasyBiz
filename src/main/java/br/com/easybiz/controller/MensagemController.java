@@ -1,7 +1,7 @@
 package br.com.easybiz.controller;
 
 import br.com.easybiz.dto.EnviarMensagemDTO;
-import br.com.easybiz.model.Mensagem;
+import br.com.easybiz.dto.MensagemResponseDTO;
 import br.com.easybiz.service.MensagemService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -18,28 +18,35 @@ import java.util.List;
 @RequestMapping("/pedidos/{pedidoId}/mensagens")
 public class MensagemController {
 
-    private final MensagemService mensagemService;
+	private final MensagemService mensagemService;
 
-    public MensagemController(MensagemService mensagemService) {
-        this.mensagemService = mensagemService;
-    }
+	public MensagemController(MensagemService mensagemService) {
+		this.mensagemService = mensagemService;
+	}
 
-    @Operation(summary = "Enviar mensagem", description = "Registra uma nova mensagem no chat do pedido.")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Mensagem enviada"),
-        @ApiResponse(responseCode = "404", description = "Pedido ou Usuário não encontrado")
-    })
-    @PostMapping
-    public ResponseEntity<Mensagem> enviar(
-            @PathVariable Long pedidoId,
-            @RequestBody @Valid EnviarMensagemDTO dto
-    ) {
-        return ResponseEntity.ok(mensagemService.enviarMensagem(pedidoId, dto));
-    }
+	@Operation(summary = "Enviar mensagem", description = "Registra uma nova mensagem no chat do pedido.")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Mensagem enviada com sucesso"),
+			@ApiResponse(responseCode = "404", description = "Pedido ou usuário não encontrado") })
+	@PostMapping
+	public ResponseEntity<MensagemResponseDTO> enviar(@PathVariable Long pedidoId,
+			@RequestBody @Valid EnviarMensagemDTO dto) {
+		return ResponseEntity.ok(mensagemService.enviarMensagem(pedidoId, dto));
+	}
 
-    @Operation(summary = "Histórico de conversa", description = "Lista todas as mensagens do pedido em ordem cronológica.")
-    @GetMapping
-    public ResponseEntity<List<Mensagem>> listar(@PathVariable Long pedidoId) {
-        return ResponseEntity.ok(mensagemService.listarMensagens(pedidoId));
-    }
+	@Operation(summary = "Histórico de conversa", description = "Lista todas as mensagens do pedido em ordem cronológica.")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Lista de mensagens retornada com sucesso"),
+			@ApiResponse(responseCode = "404", description = "Pedido não encontrado") })
+	@GetMapping
+	public ResponseEntity<List<MensagemResponseDTO>> listar(@PathVariable Long pedidoId) {
+		return ResponseEntity.ok(mensagemService.listarMensagens(pedidoId));
+	}
+
+	@Operation(summary = "Marcar mensagens como lidas")
+	@PostMapping("/lidas/{usuarioId}")
+	public ResponseEntity<Void> marcarComoLidas(@PathVariable Long pedidoId, @PathVariable Long usuarioId) {
+		mensagemService.marcarComoLidas(pedidoId, usuarioId);
+		return ResponseEntity.noContent().build();
+	}
+    
+    
 }

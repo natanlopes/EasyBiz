@@ -1,14 +1,17 @@
 package br.com.easybiz.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import br.com.easybiz.dto.EnviarMensagemDTO;
+import br.com.easybiz.dto.MensagemResponseDTO;
 import br.com.easybiz.model.Mensagem;
 import br.com.easybiz.model.PedidoServico;
 import br.com.easybiz.model.Usuario;
 import br.com.easybiz.repository.MensagemRepository;
 import br.com.easybiz.repository.PedidoServicoRepository;
 import br.com.easybiz.repository.UsuarioRepository;
+import jakarta.transaction.Transactional;
 
 @Service
 public class MensagemService {
@@ -28,7 +31,9 @@ public class MensagemService {
         this.usuarioRepository = usuarioRepository;
     }
 
-    public Mensagem enviarMensagem(Long pedidoId, EnviarMensagemDTO dto) {
+ // 🔹 AGORA retorna DTO
+    public MensagemResponseDTO enviarMensagem(Long pedidoId, EnviarMensagemDTO dto) {
+
         PedidoServico pedido = pedidoServicoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
 
@@ -36,17 +41,52 @@ public class MensagemService {
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
         Mensagem mensagem = new Mensagem();
-        
-        mensagem.setPedidoServico(pedido); 
+        mensagem.setPedidoServico(pedido);
         mensagem.setRemetente(remetente);
         mensagem.setConteudo(dto.conteudo());
-       
 
-        return mensagemRepository.save(mensagem);
+        Mensagem salva = mensagemRepository.save(mensagem);
+
+        return toResponseDTO(salva);
     }
 
-    public List<Mensagem> listarMensagens(Long pedidoId) {
-      
-        return mensagemRepository.findByPedidoServico_IdOrderByEnviadoEmAsc(pedidoId);
+    // 🔹 AGORA retorna lista de DTO
+    public List<MensagemResponseDTO> listarMensagens(Long pedidoId) {
+
+        return mensagemRepository
+                .findByPedidoServico_IdOrderByEnviadoEmAsc(pedidoId)
+                .stream()
+                .map(this::toResponseDTO)
+                .toList();
     }
+
+    // 🔹 Mapper centralizado
+    private MensagemResponseDTO toResponseDTO(Mensagem mensagem) {
+        return new MensagemResponseDTO(
+                mensagem.getId(),
+                mensagem.getPedidoServico().getId(),
+                mensagem.getRemetente().getId(),
+                mensagem.getRemetente().getNomeCompleto(),
+                mensagem.getConteudo(),
+                mensagem.getEnviadoEm(),
+                mensagem.getLida(),
+                mensagem.getLidaEm()
+        );
+    }
+
+    @Transactional
+    public void marcarComoLidas(Long pedidoId, Long usuarioId) {
+
+        List<Mensagem> mensagens = mensagemRepository
+                .findNaoLidasDoPedido(pedidoId, usuarioId);
+
+        for (Mensagem m : mensagens) {
+            m.setLida(true);
+            m.setLidaEm(LocalDateTime.now());
+        }
+
+        mensagemRepository.saveAll(mensagens);
+    }
+
+
 }

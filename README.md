@@ -108,16 +108,63 @@ O pedido funciona como um **"inbox"**, onde a conversa começa.
 
 ### 💬 Mensagens (Chat)
 
-Após criar um pedido, cliente e dono do negócio conversam através de mensagens.
+O módulo de Chat permite a comunicação em tempo real entre cliente e prestador dentro de um Pedido de Serviço, com persistência em banco e suporte a WebSocket.
 
-Esse chat serve para:
+## 🎯 Objetivo
 
-* Negociar valores
-* Ajustar datas
-* Esclarecer dúvidas
-* Confirmar ou cancelar serviços
+- Permitir troca de mensagens em tempo real
 
----
+- Garantir histórico completo da conversa
+
+- Isolar mensagens por pedido
+
+- Suportar escalabilidade (modelo enterprise)
+t é composto por 3 camadas:
+
+## 1️⃣ REST (HTTP)
+
+Usado para:
+
+- Buscar histórico
+
+- Fallback (caso WebSocket caia)
+
+- Auditoria
+
+## 2️⃣ WebSocket (STOMP)
+
+Usado para:
+
+- Mensagens em tempo real
+
+- Experiência fluida (sem refresh)
+
+## 3️⃣ Banco de Dados
+
+Usado para:
+
+- Persistência
+
+- Compliance
+
+- Logs históricos
+
+## Entidades Envolvidas
+- Mensagem
+
+- Representa uma mensagem enviada no chat de um pedido.
+
+Relacionamentos:
+
+- PedidoServico (ManyToOne)
+
+- Usuario (remetente)
+
+- Campos principais:
+
+- conteudo
+
+- enviadoEm
 
 ## 🔄 Fluxo principal do sistema
 
