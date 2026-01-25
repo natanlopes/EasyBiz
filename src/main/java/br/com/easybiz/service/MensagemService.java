@@ -88,5 +88,35 @@ public class MensagemService {
         mensagemRepository.saveAll(mensagens);
     }
 
+	@Transactional
+	public void marcarMensagemEspecifica(Long pedidoId, Long mensagemId, Long quemLeuId) {
+		Mensagem mensagem = mensagemRepository.findById(mensagemId)
+				.orElseThrow(() -> new RuntimeException("Mensagem não encontrada"));
+
+		if (!mensagem.getPedidoServico().getId().equals(pedidoId)) {
+			throw new RuntimeException("Mensagem não pertence ao pedido");
+		}
+
+		if (mensagem.getRemetente().getId().equals(quemLeuId)) {
+			return; // remetente não marca própria mensagem como lida
+		}
+
+		if (mensagem.getLida()) {
+			return;
+		}
+
+		mensagem.setLida(true);
+		mensagem.setLidaEm(LocalDateTime.now());
+	}
+
+
+    public br.com.easybiz.dto.UltimoVistoDTO buscarUltimoVisto(Long pedidoId, Long usuarioId) {
+        // Busca no banco
+        LocalDateTime data = mensagemRepository.buscarUltimaLeitura(pedidoId, usuarioId);
+        
+        // Retorna o DTO
+        return new br.com.easybiz.dto.UltimoVistoDTO(pedidoId, data);
+    }
+
 
 }

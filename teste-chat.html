@@ -1,71 +1,220 @@
+Com certeza! Aqui está o seu HTML atualizado integrando as duas novas lógicas que implementamos no Backend:
+
+1. **Leitura Inteligente (Batch):** Quando chegar o aviso de leitura, ele percorre as mensagens na tela e marca todas as anteriores como lidas também.
+2. **Visto por Último:** Ouve o novo tópico e atualiza o cabeçalho.
+
+Copie e substitua todo o arquivo `teste-chat.html`:
+
+```html
 <!DOCTYPE html>
 <html>
 <head>
-    <title>EasyBiz Chat Teste</title>
+    <title>EasyBiz Chat - Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        #conversa { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; }
-        .msg { padding: 5px; margin: 5px 0; border-radius: 5px; }
-        .eu { background-color: #dcf8c6; text-align: right; }
-        .outro { background-color: #f1f0f0; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #e5ddd5; padding: 20px; }
+        #chat-container { max-width: 500px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow: hidden; }
+        
+        /* Ajuste no Header para caber o Status */
+        #header { background-color: #075e54; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .header-info { display: flex; flex-direction: column; }
+        .last-seen { font-size: 11px; font-weight: normal; opacity: 0.8; margin-top: 2px; }
+
+        #conversa { height: 350px; overflow-y: scroll; padding: 15px; background: #e5ddd5; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
+        
+        .msg-row { display: flex; margin-bottom: 10px; flex-direction: column; }
+        .msg { padding: 8px 12px; border-radius: 7px; max-width: 70%; position: relative; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        
+        .msg-clickable { cursor: pointer; transition: background 0.2s; }
+        .msg-clickable:active { transform: scale(0.98); }
+
+        .eu-row { align-items: flex-end; }
+        .eu { background-color: #dcf8c6; border-top-right-radius: 0; }
+        
+        .outro-row { align-items: flex-start; }
+        .outro { background-color: #ffffff; border-top-left-radius: 0; }
+        
+        .status-lida { font-size: 10px; color: #34b7f1; text-align: right; margin-top: 2px; display: none; } 
+        .status-lida.visto { display: block; }
+
+        .msg-id { font-size: 9px; color: #999; margin-bottom: 2px; }
+
+        #digitando { height: 20px; font-size: 12px; color: #075e54; font-weight: bold; padding: 0 15px; background: white; font-style: italic; display: flex; align-items: center;}
+        
+        .input-area { padding: 10px; background: #f0f0f0; display: flex; gap: 10px; }
+        input { flex-grow: 1; padding: 10px; border: none; border-radius: 20px; outline: none; }
+        button { padding: 10px 20px; background-color: #075e54; color: white; border: none; border-radius: 50%; cursor: pointer; }
+        
+        .setup { margin-bottom: 20px; padding: 10px; background: white; border-radius: 5px; }
     </style>
 </head>
 <body>
-    <h2>💬 Chat EasyBiz - Pedido #1</h2>
+
+<div class="setup">
+    <input type="number" id="usuarioId" placeholder="ID" value="1" style="width: 50px">
+    <input type="text" id="usuarioNome" placeholder="Nome" value="Eu" style="width: 100px">
+    <button onclick="conectar()" style="border-radius: 5px; width: auto;">Conectar</button>
+</div>
+
+<div id="chat-container">
+    <div id="header">
+        <div class="header-info" id="header-content">
+            EasyBiz Chat
+            </div>
+        <span id="status-conn">🔴</span>
+    </div>
     
-    <div>
-        <label>ID Usuário:</label> <input type="number" id="usuarioId" value="1">
-        <button onclick="conectar()">1. Conectar</button>
-    </div>
-    <hr/>
     <div id="conversa"></div>
-    <div>
-        <input type="text" id="conteudo" placeholder="Digite sua mensagem..." style="width: 70%;">
-        <button onclick="enviar()">2. Enviar</button>
+    
+    <div id="digitando"></div>
+    
+    <div class="input-area">
+        <input type="text" id="conteudo" placeholder="Digite uma mensagem..." 
+               oninput="avisarDigitando()"> 
+        <button onclick="enviar()">➤</button>
     </div>
+</div>
 
-    <script>
-        var stompClient = null;
-        var pedidoId = 1; // Estamos testando o Pedido 1
+<script>
+    var stompClient = null;
+    var pedidoId = 1; 
+    var timeoutDigitando = null;
 
-        function conectar() {
-            var socket = new SockJS('http://localhost:8080/ws');
-            stompClient = Stomp.over(socket);
-            stompClient.connect({}, function (frame) {
-                console.log('Conectado: ' + frame);
-                alert("Conectado ao Servidor!");
+function conectar() {
+    if (stompClient !== null) return;
+
+    var socket = new SockJS('http://localhost:8080/ws');
+    stompClient = Stomp.over(socket);
+
+    stompClient.connect({}, function () {
+        document.getElementById('status-conn').innerText = "🟢";
+        alert("Conectado!");
+
+        // 1. Ouvir Mensagens
+        stompClient.subscribe('/topic/mensagens/' + pedidoId, function (msg) {
+            mostrarMensagem(JSON.parse(msg.body));
+        });
+
+        // 2. Ouvir Digitando
+        stompClient.subscribe('/topic/mensagens/' + pedidoId + '/digitando', function (msg) {
+            let dto = JSON.parse(msg.body);
+            let meuId = document.getElementById('usuarioId').value;
+            let div = document.getElementById('digitando');
+
+            if (dto.usuarioId != meuId && dto.digitando) {
+                div.innerText = dto.usuarioNome + " está digitando...";
+            } else {
+                div.innerText = "";
+            }
+        });
+
+        // 3. Ouvir "LIDA" (LÓGICA INTELIGENTE / BATCH)
+        stompClient.subscribe('/topic/mensagens/' + pedidoId + '/lida', function (msg) {
+            let dto = JSON.parse(msg.body);
+            let meuId = document.getElementById('usuarioId').value;
+
+            // Se quem leu NÃO fui eu (ou seja, foi o outro usuário lendo MINHAS mensagens)
+            if (dto.quemLeuId != meuId) {
                 
-                // Se inscreve para OUVIR as mensagens do Pedido 1
-                stompClient.subscribe('/topic/mensagens/' + pedidoId, function (mensagem) {
-                    mostrarMensagem(JSON.parse(mensagem.body));
+                // Seleciona todas as mensagens que EU enviei (.eu-row)
+                let minhasMensagens = document.querySelectorAll('.eu-row');
+
+                minhasMensagens.forEach(row => {
+                    // Pega o ID da mensagem do atributo ID da div (msg-50)
+                    let idTexto = row.id.replace('msg-', '');
+                    let idMsg = parseInt(idTexto);
+
+                    // SE o ID dessa mensagem for MENOR ou IGUAL ao ID que foi lido...
+                    if (idMsg <= dto.mensagemId) {
+                        // ...Marca como lida (adiciona o check azul)
+                        let check = row.querySelector('.status-lida');
+                        if (check) check.classList.add('visto');
+                    }
                 });
-            });
-        }
+            }
+        });
 
-        function enviar() {
-            var usuarioId = document.getElementById('usuarioId').value;
-            var conteudo = document.getElementById('conteudo').value;
+        // 4. Ouvir "VISTO POR ÚLTIMO" (NOVO!)
+        stompClient.subscribe('/topic/mensagens/' + pedidoId + '/ultimo-visto', function (msg) {
+            let dto = JSON.parse(msg.body);
             
-            // Envia para o servidor
-            stompClient.send("/app/chat/" + pedidoId, {}, JSON.stringify({
-                'usuarioId': usuarioId,
-                'conteudo': conteudo
-            }));
-            document.getElementById('conteudo').value = "";
-        }
+            if (!dto.vistoEm) return;
 
-        function mostrarMensagem(msg) {
-            var div = document.getElementById('conversa');
-            var novaLinha = document.createElement('div');
-            // Só pra diferenciar visualmente quem mandou
-            var classe = (msg.remetenteId == document.getElementById('usuarioId').value) ? 'eu' : 'outro';
-            
-            novaLinha.className = 'msg ' + classe;
-            novaLinha.innerHTML = "<b>" + msg.remetenteNome + ":</b> " + msg.conteudo;
-            div.appendChild(novaLinha);
-        }
-    </script>
+            let data = new Date(dto.vistoEm);
+            let hora = data.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            // Atualiza o HTML do Header mantendo o título
+            document.getElementById('header-content').innerHTML = 
+                `EasyBiz Chat <span class="last-seen">Visto hoje às ${hora}</span>`;
+        });
+    });
+}
+
+    function enviar() {
+        var usuarioId = document.getElementById('usuarioId').value;
+        var conteudo = document.getElementById('conteudo').value;
+        
+        stompClient.send("/app/chat/" + pedidoId, {}, JSON.stringify({
+            'usuarioId': usuarioId,
+            'conteudo': conteudo
+        }));
+        document.getElementById('conteudo').value = "";
+    }
+
+    function avisarLeitura(mensagemId) {
+        let usuarioId = document.getElementById('usuarioId').value;
+
+        // Envia confirmação específica
+        stompClient.send("/app/chat/" + pedidoId + "/lida/" + mensagemId, {}, JSON.stringify({
+            usuarioId: usuarioId,
+            usuarioNome: "",
+            digitando: false
+        }));
+    }
+
+    function avisarDigitando() {
+        enviarEvento("digitando", true);
+        clearTimeout(timeoutDigitando);
+        timeoutDigitando = setTimeout(() => enviarEvento("digitando", false), 1500);
+    }
+
+    function enviarEvento(tipo, status) {
+        if (!stompClient) return;
+        var id = document.getElementById('usuarioId').value;
+        var nome = document.getElementById('usuarioNome').value;
+
+        stompClient.send("/app/chat/" + pedidoId + "/" + tipo, {}, JSON.stringify({
+            usuarioId: id,
+            usuarioNome: nome,
+            digitando: status
+        }));
+    }
+
+    function mostrarMensagem(msg) {
+        var div = document.getElementById('conversa');
+        var meuId = document.getElementById('usuarioId').value;
+        var souEu = (msg.remetenteId == meuId);
+
+        var clickEvent = !souEu ? `onclick="avisarLeitura(${msg.id})"` : '';
+        var classeClick = !souEu ? 'msg-clickable' : '';
+
+        // O ID "msg-XX" é crucial para a lógica de leitura funcionar
+        var html = `
+            <div id="msg-${msg.id}" class="msg-row ${souEu ? 'eu-row' : 'outro-row'}">
+                <div class="msg ${souEu ? 'eu' : 'outro'} ${classeClick}" ${clickEvent}>
+                    <div class="msg-id">#${msg.id}</div>
+                    ${msg.conteudo}
+                    ${souEu ? '<div class="status-lida">✅ Lida</div>' : ''}
+                </div>
+            </div>
+        `;
+        
+        div.innerHTML += html;
+        div.scrollTop = div.scrollHeight;
+    }
+</script>
 </body>
 </html>
+
+```
