@@ -3,7 +3,7 @@ package br.com.easybiz.controller;
 import br.com.easybiz.model.Usuario;
 import br.com.easybiz.repository.UsuarioRepository;
 import br.com.easybiz.security.JwtService;
-import io.swagger.v3.oas.annotations.Operation; // Para ficar bonito no Swagger
+import io.swagger.v3.oas.annotations.Operation; 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,7 +39,7 @@ public class AuthController {
         }
 
         // 3. Gera Token com ID
-        String token = jwtService.generateToken(usuario.getId());
+        String token = jwtService.gerarToken(usuario.getId());
 
         return ResponseEntity.ok(Map.of("token", token));
     }

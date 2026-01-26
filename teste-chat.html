@@ -1,22 +1,13 @@
-Com certeza! Aqui está o seu HTML atualizado integrando as duas novas lógicas que implementamos no Backend:
-
-1. **Leitura Inteligente (Batch):** Quando chegar o aviso de leitura, ele percorre as mensagens na tela e marca todas as anteriores como lidas também.
-2. **Visto por Último:** Ouve o novo tópico e atualiza o cabeçalho.
-
-Copie e substitua todo o arquivo `teste-chat.html`:
-
-```html
 <!DOCTYPE html>
 <html>
 <head>
-    <title>EasyBiz Chat - Pro</title>
+    <title>EasyBiz Chat - Seguro 🔒</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #e5ddd5; padding: 20px; }
         #chat-container { max-width: 500px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow: hidden; }
         
-        /* Ajuste no Header para caber o Status */
         #header { background-color: #075e54; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         .header-info { display: flex; flex-direction: column; }
         .last-seen { font-size: 11px; font-weight: normal; opacity: 0.8; margin-top: 2px; }
@@ -46,22 +37,24 @@ Copie e substitua todo o arquivo `teste-chat.html`:
         input { flex-grow: 1; padding: 10px; border: none; border-radius: 20px; outline: none; }
         button { padding: 10px 20px; background-color: #075e54; color: white; border: none; border-radius: 50%; cursor: pointer; }
         
-        .setup { margin-bottom: 20px; padding: 10px; background: white; border-radius: 5px; }
+        .setup { margin-bottom: 20px; padding: 10px; background: white; border-radius: 5px; display: flex; gap: 10px; flex-wrap: wrap;}
     </style>
 </head>
 <body>
 
 <div class="setup">
-    <input type="number" id="usuarioId" placeholder="ID" value="1" style="width: 50px">
-    <input type="text" id="usuarioNome" placeholder="Nome" value="Eu" style="width: 100px">
-    <button onclick="conectar()" style="border-radius: 5px; width: auto;">Conectar</button>
+    <input type="text" id="tokenJwt" placeholder="Cole o Token JWT aqui..." style="flex-grow: 1;">
+    
+    <input type="number" id="usuarioId" placeholder="Meu ID Visual" value="7" style="width: 100px">
+    
+    <button onclick="conectar()" style="border-radius: 5px; width: auto; background-color: #075e54; color: white;">Conectar Seguro 🔒</button>
 </div>
 
 <div id="chat-container">
     <div id="header">
         <div class="header-info" id="header-content">
             EasyBiz Chat
-            </div>
+        </div>
         <span id="status-conn">🔴</span>
     </div>
     
@@ -81,93 +74,103 @@ Copie e substitua todo o arquivo `teste-chat.html`:
     var pedidoId = 1; 
     var timeoutDigitando = null;
 
-function conectar() {
-    if (stompClient !== null) return;
+    function conectar() {
+        if (stompClient !== null) return;
 
-    var socket = new SockJS('http://localhost:8080/ws');
-    stompClient = Stomp.over(socket);
+        // MUDANÇA 2: Pegar o token
+        var token = document.getElementById('tokenJwt').value;
+        if (!token) {
+            alert("⚠️ Cole o Token JWT para entrar!");
+            return;
+        }
 
-    stompClient.connect({}, function () {
-        document.getElementById('status-conn').innerText = "🟢";
-        alert("Conectado!");
+		var socket = new SockJS('http://localhost:8080/ws-chat');
 
-        // 1. Ouvir Mensagens
-        stompClient.subscribe('/topic/mensagens/' + pedidoId, function (msg) {
-            mostrarMensagem(JSON.parse(msg.body));
+        stompClient = Stomp.over(socket);
+
+        // MUDANÇA 3: Enviar o Header Authorization
+        var headers = {
+            'Authorization': 'Bearer ' + token
+        };
+
+        stompClient.connect(headers, function () {
+            document.getElementById('status-conn').innerText = "🟢 Conectado Seguro";
+            alert("Conectado via JWT! 🛡️");
+
+            // 1. Ouvir Mensagens
+            stompClient.subscribe('/topic/mensagens/' + pedidoId, function (msg) {
+                mostrarMensagem(JSON.parse(msg.body));
+            });
+
+            // 2. Ouvir Digitando
+            stompClient.subscribe('/topic/mensagens/' + pedidoId + '/digitando', function (msg) {
+                let dto = JSON.parse(msg.body);
+                // Nota: O usuarioId aqui é usado apenas visualmente
+                let meuId = document.getElementById('usuarioId').value; 
+                let div = document.getElementById('digitando');
+
+                if (dto.usuarioId != meuId && dto.digitando) {
+                    div.innerText = (dto.usuarioNome || "Alguém") + " está digitando...";
+                } else {
+                    div.innerText = "";
+                }
+            });
+
+            // 3. Ouvir "LIDA" (LÓGICA INTELIGENTE / BATCH)
+            stompClient.subscribe('/topic/mensagens/' + pedidoId + '/lida', function (msg) {
+                let dto = JSON.parse(msg.body);
+                let meuId = document.getElementById('usuarioId').value;
+
+                if (dto.quemLeuId != meuId) {
+                    let minhasMensagens = document.querySelectorAll('.eu-row');
+                    minhasMensagens.forEach(row => {
+                        let idTexto = row.id.replace('msg-', '');
+                        let idMsg = parseInt(idTexto);
+
+                        if (idMsg <= dto.mensagemId) {
+                            let check = row.querySelector('.status-lida');
+                            if (check) check.classList.add('visto');
+                        }
+                    });
+                }
+            });
+
+            // 4. Ouvir "VISTO POR ÚLTIMO"
+            stompClient.subscribe('/topic/mensagens/' + pedidoId + '/ultimo-visto', function (msg) {
+                let dto = JSON.parse(msg.body);
+                if (!dto.vistoEm) return;
+
+                let data = new Date(dto.vistoEm);
+                let hora = data.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                document.getElementById('header-content').innerHTML = 
+                    `EasyBiz Chat <span class="last-seen">Visto hoje às ${hora}</span>`;
+            });
+        }, function(error) {
+            console.log(error);
+            alert("❌ Erro de conexão! Token inválido ou expirado.");
         });
-
-        // 2. Ouvir Digitando
-        stompClient.subscribe('/topic/mensagens/' + pedidoId + '/digitando', function (msg) {
-            let dto = JSON.parse(msg.body);
-            let meuId = document.getElementById('usuarioId').value;
-            let div = document.getElementById('digitando');
-
-            if (dto.usuarioId != meuId && dto.digitando) {
-                div.innerText = dto.usuarioNome + " está digitando...";
-            } else {
-                div.innerText = "";
-            }
-        });
-
-        // 3. Ouvir "LIDA" (LÓGICA INTELIGENTE / BATCH)
-        stompClient.subscribe('/topic/mensagens/' + pedidoId + '/lida', function (msg) {
-            let dto = JSON.parse(msg.body);
-            let meuId = document.getElementById('usuarioId').value;
-
-            // Se quem leu NÃO fui eu (ou seja, foi o outro usuário lendo MINHAS mensagens)
-            if (dto.quemLeuId != meuId) {
-                
-                // Seleciona todas as mensagens que EU enviei (.eu-row)
-                let minhasMensagens = document.querySelectorAll('.eu-row');
-
-                minhasMensagens.forEach(row => {
-                    // Pega o ID da mensagem do atributo ID da div (msg-50)
-                    let idTexto = row.id.replace('msg-', '');
-                    let idMsg = parseInt(idTexto);
-
-                    // SE o ID dessa mensagem for MENOR ou IGUAL ao ID que foi lido...
-                    if (idMsg <= dto.mensagemId) {
-                        // ...Marca como lida (adiciona o check azul)
-                        let check = row.querySelector('.status-lida');
-                        if (check) check.classList.add('visto');
-                    }
-                });
-            }
-        });
-
-        // 4. Ouvir "VISTO POR ÚLTIMO" (NOVO!)
-        stompClient.subscribe('/topic/mensagens/' + pedidoId + '/ultimo-visto', function (msg) {
-            let dto = JSON.parse(msg.body);
-            
-            if (!dto.vistoEm) return;
-
-            let data = new Date(dto.vistoEm);
-            let hora = data.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            // Atualiza o HTML do Header mantendo o título
-            document.getElementById('header-content').innerHTML = 
-                `EasyBiz Chat <span class="last-seen">Visto hoje às ${hora}</span>`;
-        });
-    });
-}
+    }
 
     function enviar() {
+        // O Backend agora usa o ID do Token, mas o DTO ainda pode esperar o campo
+        // Mandamos o ID visual só para manter compatibilidade se o DTO exigir, 
+        // mas a segurança do backend vai ignorar e usar o do Token.
         var usuarioId = document.getElementById('usuarioId').value;
         var conteudo = document.getElementById('conteudo').value;
         
-        stompClient.send("/app/chat/" + pedidoId, {}, JSON.stringify({
-            'usuarioId': usuarioId,
-            'conteudo': conteudo
-        }));
+		stompClient.send("/app/chat/" + pedidoId, {}, JSON.stringify({
+		    'conteudo': conteudo
+		}));
+
         document.getElementById('conteudo').value = "";
     }
 
     function avisarLeitura(mensagemId) {
         let usuarioId = document.getElementById('usuarioId').value;
-
-        // Envia confirmação específica
+        
         stompClient.send("/app/chat/" + pedidoId + "/lida/" + mensagemId, {}, JSON.stringify({
-            usuarioId: usuarioId,
+            usuarioId: usuarioId, 
             usuarioNome: "",
             digitando: false
         }));
@@ -182,11 +185,10 @@ function conectar() {
     function enviarEvento(tipo, status) {
         if (!stompClient) return;
         var id = document.getElementById('usuarioId').value;
-        var nome = document.getElementById('usuarioNome').value;
 
         stompClient.send("/app/chat/" + pedidoId + "/" + tipo, {}, JSON.stringify({
             usuarioId: id,
-            usuarioNome: nome,
+            usuarioNome: "Eu",
             digitando: status
         }));
     }
@@ -199,7 +201,6 @@ function conectar() {
         var clickEvent = !souEu ? `onclick="avisarLeitura(${msg.id})"` : '';
         var classeClick = !souEu ? 'msg-clickable' : '';
 
-        // O ID "msg-XX" é crucial para a lógica de leitura funcionar
         var html = `
             <div id="msg-${msg.id}" class="msg-row ${souEu ? 'eu-row' : 'outro-row'}">
                 <div class="msg ${souEu ? 'eu' : 'outro'} ${classeClick}" ${clickEvent}>
@@ -216,5 +217,3 @@ function conectar() {
 </script>
 </body>
 </html>
-
-```

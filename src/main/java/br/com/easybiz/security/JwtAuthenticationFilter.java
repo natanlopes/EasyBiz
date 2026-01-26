@@ -19,11 +19,9 @@ import java.util.Collections;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UsuarioRepository usuarioRepository; // 1. Adicionamos o Repo
 
-    public JwtAuthenticationFilter(JwtService jwtService, UsuarioRepository usuarioRepository) {
+    public JwtAuthenticationFilter(JwtService jwtService) {
         this.jwtService = jwtService;
-        this.usuarioRepository = usuarioRepository;
     }
 
     @Override
@@ -33,37 +31,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
+        String header = request.getHeader("Authorization");
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        if (header != null && header.startsWith("Bearer ")) {
+            String token = header.substring(7);
 
-            String token = authHeader.substring(7);
-
-            // 2. Ajuste de nome: tokenValido -> isTokenValid
-            if (jwtService.isTokenValid(token)) {
-                
-                // 3. Ajuste de nome: extrairUsuarioId -> extractUserId
+            if (jwtService.tokenValido(token)) {
                 Long usuarioId = jwtService.extractUserId(token);
 
-                // 4. Buscamos o usuário real para colocar no Contexto
-                // Isso permite usar @AuthenticationPrincipal Usuario u nos Controllers REST
-                Usuario usuario = usuarioRepository.findById(usuarioId)
-                        .orElse(null);
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(
+                                usuarioId,
+                                null,
+                                Collections.emptyList()
+                        );
 
-                if (usuario != null) {
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(
-                                    usuario, // Passamos o OBJETO, não só o ID
-                                    null,
-                                    Collections.emptyList()
-                            );
-
-                    authentication.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
-
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
+                SecurityContextHolder.getContext().setAuthentication(auth);
             }
         }
 
