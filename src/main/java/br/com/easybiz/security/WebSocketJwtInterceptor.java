@@ -1,4 +1,7 @@
 package br.com.easybiz.security;
+
+import br.com.easybiz.model.PedidoServico;
+import br.com.easybiz.repository.PedidoServicoRepository;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -14,17 +17,26 @@ import java.util.Collections;
 public class WebSocketJwtInterceptor implements ChannelInterceptor {
 
     private final JwtService jwtService;
+    private final PedidoServicoRepository pedidoServicoRepository;
 
-    public WebSocketJwtInterceptor(JwtService jwtService) {
+    public WebSocketJwtInterceptor(
+            JwtService jwtService,
+            PedidoServicoRepository pedidoServicoRepository
+    ) {
         this.jwtService = jwtService;
+        this.pedidoServicoRepository = pedidoServicoRepository;
     }
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
 
-        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
+        StompHeaderAccessor accessor =
+                MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        if ("CONNECT".equals(accessor.getCommand().name())) {
+        if (accessor == null) return message;
+
+        // 🔐 CONNECT → autenticação
+        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
 
             String authHeader = accessor.getFirstNativeHeader("Authorization");
 
@@ -38,12 +50,47 @@ public class WebSocketJwtInterceptor implements ChannelInterceptor {
 
                     UsernamePasswordAuthenticationToken auth =
                             new UsernamePasswordAuthenticationToken(
-                                    usuarioId,
+                                    usuarioId.toString(), // vira Principal.getName()
                                     null,
                                     Collections.emptyList()
                             );
 
-                    accessor.setUser(auth); // 🔥 ESSENCIAL
+                    accessor.setUser(auth);
+                }
+            }
+        }
+
+        // 🔒 SUBSCRIBE → autorização da sala
+        if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+
+            String destination = accessor.getDestination();
+            if (destination == null) return message;
+
+            if (destination.startsWith("/topic/mensagens/")) {
+
+                Long pedidoId = Long.valueOf(destination.split("/")[3]);
+
+                if (accessor.getUser() == null) {
+                    throw new RuntimeException("Usuário não autenticado");
+                }
+
+                Long usuarioId =
+                        Long.valueOf(accessor.getUser().getName());
+
+                PedidoServico pedido = pedidoServicoRepository.findById(pedidoId)
+                        .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+
+                boolean isCliente =
+                        pedido.getCliente().getId().equals(usuarioId);
+
+                boolean isProfissional =
+                        pedido.getNegocio()
+                              .getUsuario()
+                              .getId()
+                              .equals(usuarioId);
+
+                if (!isCliente && !isProfissional) {
+                    throw new RuntimeException("Acesso negado ao chat");
                 }
             }
         }

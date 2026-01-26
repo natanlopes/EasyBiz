@@ -6,76 +6,103 @@ import br.com.easybiz.dto.MensagemLidaDTO;
 import br.com.easybiz.dto.MensagemResponseDTO;
 import br.com.easybiz.service.MensagemService;
 
+import java.security.Principal;
 import java.time.LocalDateTime;
 
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.messaging.simp.SimpMessagingTemplate; // <--- Importante!
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 @Controller
 public class ChatController {
 
     private final MensagemService mensagemService;
-    private final SimpMessagingTemplate messagingTemplate; // <--- Declarando a variável que faltava
+    private final SimpMessagingTemplate messagingTemplate;
 
-    // Construtor atualizado recebendo as duas dependências
-    public ChatController(MensagemService mensagemService, SimpMessagingTemplate messagingTemplate) {
+    public ChatController(
+            MensagemService mensagemService,
+            SimpMessagingTemplate messagingTemplate
+    ) {
         this.mensagemService = mensagemService;
         this.messagingTemplate = messagingTemplate;
     }
 
-    // 🔹 1. ENVIO DE MENSAGEM (Persistência + WebSocket)
-    // Usa @SendTo, então o retorno do método é enviado automaticamente para o tópico
+    // 🔹 1. ENVIO DE MENSAGEM (JWT manda no remetente)
     @MessageMapping("/chat/{pedidoId}")
-    @SendTo("/topic/mensagens/{pedidoId}")
-    public MensagemResponseDTO enviarMensagemEmTempoReal(
-            @DestinationVariable Long pedidoId, 
-            EnviarMensagemDTO dto
+    public void enviarMensagemEmTempoReal(
+            @DestinationVariable Long pedidoId,
+            EnviarMensagemDTO dto,
+            Principal principal
     ) {
-        return mensagemService.enviarMensagem(pedidoId, dto);
+
+        // 🔐 ID REAL vem do JWT
+        Long remetenteId = Long.valueOf(principal.getName());
+
+        MensagemResponseDTO mensagem = mensagemService.enviarMensagem(
+                pedidoId,
+                remetenteId,
+                dto.conteudo()
+        );
+
+        // 📡 envia para o tópico
+        messagingTemplate.convertAndSend(
+                "/topic/mensagens/" + pedidoId,
+                mensagem
+        );
     }
 
-    // 🔹 2. INDICADOR "DIGITANDO..." (Apenas WebSocket)
-    // Não salva no banco. Usa o messagingTemplate para enviar manualmente.
+    // 🔹 2. DIGITANDO (não persiste)
     @MessageMapping("/chat/{pedidoId}/digitando")
     public void digitando(
             @DestinationVariable Long pedidoId,
-            DigitandoDTO dto
+            DigitandoDTO dto,
+            Principal principal
     ) {
+        Long usuarioId = Long.valueOf(principal.getName());
+
         messagingTemplate.convertAndSend(
                 "/topic/mensagens/" + pedidoId + "/digitando",
-                dto
+                new DigitandoDTO(usuarioId, dto.usuarioNome(), dto.digitando())
         );
     }
 
+    // 🔹 3. MENSAGEM LIDA
     @MessageMapping("/chat/{pedidoId}/lida/{mensagemId}")
-    public void confirmarLeituraEspecifica(
+    public void confirmarLeitura(
             @DestinationVariable Long pedidoId,
             @DestinationVariable Long mensagemId,
-            DigitandoDTO dto // dto.usuarioId() é QUEM LEU
+            Principal principal
     ) {
-        // 1. Persiste a leitura no banco (já estava feito)
-        mensagemService.marcarMensagemEspecifica(pedidoId, mensagemId, dto.usuarioId());
+        Long quemLeuId = Long.valueOf(principal.getName());
 
-        // 2. Avisa que as mensagens ficaram azuis (✅) (já estava feito)
-        messagingTemplate.convertAndSend(
-            "/topic/mensagens/" + pedidoId + "/lida",
-            new MensagemLidaDTO(mensagemId, pedidoId, dto.usuarioId(), LocalDateTime.now())
+        // salva leitura
+        mensagemService.marcarMensagemEspecifica(
+                pedidoId,
+                mensagemId,
+                quemLeuId
         );
 
-        // -----------------------------------------------------------
-        // 3. NOVO: Calcula e avisa o "Visto por último" 
-        // -----------------------------------------------------------
-        var ultimoVisto = mensagemService.buscarUltimoVisto(pedidoId, dto.usuarioId());
-        
-        // Dispara para o tópico específico de status
+        // avisa "lida"
         messagingTemplate.convertAndSend(
-            "/topic/mensagens/" + pedidoId + "/ultimo-visto",
-            ultimoVisto
+                "/topic/mensagens/" + pedidoId + "/lida",
+                new MensagemLidaDTO(
+                        mensagemId,
+                        pedidoId,
+                        quemLeuId,
+                        LocalDateTime.now()
+                )
+        );
+
+        // último visto
+        var ultimoVisto = mensagemService.buscarUltimoVisto(
+                pedidoId,
+                quemLeuId
+        );
+
+        messagingTemplate.convertAndSend(
+                "/topic/mensagens/" + pedidoId + "/ultimo-visto",
+                ultimoVisto
         );
     }
-
-
 }

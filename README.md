@@ -36,238 +36,159 @@ O **EasyBiz** resolve isso ao oferecer:
 ---
 
 ## 👥 Quem usa o EasyBiz
+🔹 Dono do Negócio (Prestador)
 
-### 🔹 Dono do Negócio
+- Cria um perfil de serviço e define disponibilidade.
 
-* Cria um perfil de serviço
-* Define horários ou disponibilidade
-* Recebe pedidos de serviço
-* Negocia diretamente com o cliente via chat
+- Recebe novos pedidos na aba de "Novos Contatos".
+
+- Aceita ou Recusa serviços.
+
+- Negocia via chat e finaliza o pedido.
+
+## 🔹 Cliente
+- Busca serviços por categoria.
+
+
+- Visualiza negócios disponíveis.
+
+
+- Cria um pedido de serviço (Inicia uma "sala" de negociação).
+
+
+- Acompanha o status (Aberto, Aceito, Concluído).
+
 
 ## 🚀 Tecnologias
-- **Java 17+**
-- **Spring Boot 3**
-- **PostgreSQL** (Docker)
-- **Spring Data JPA**
-- **Lombok**
-- **Spring Security** (Básico configurado)
+O projeto utiliza uma stack moderna e robusta para alta performance:
 
-### 🔹 Cliente
+- Java 17+
 
-* Busca serviços por categoria
-* Visualiza negócios disponíveis
-* Consulta horários aproximados
-* Envia pedido de serviço
-* Negocia valores, datas e detalhes no chat
+- Spring Boot 3
 
----
+- PostgreSQL (Docker)
+
+- Spring Data JPA
+
+- Lombok
+
+- Spring Security (JWT Implementation)
+
+- WebSocket (STOMP + SockJS)
+
+- JJWT (Json Web Token 0.11.5)
+
+- SpringDoc OpenAPI (Swagger)
+
+##  🔐 Segurança & Autenticação (Implementado)
+O sistema abandonou o modelo básico e agora opera com Segurança Stateless via JWT.
+
+##  🛡️ Arquitetura de Segurança
+- JWT Service Centralizado: Geração e validação de tokens assinados com algoritmo HS256 e chaves criptográficas de 256 bits.
+
+- Stateless: Não há sessão no servidor. Cada requisição carrega sua credencial.
+
+- Proteção Dupla:
+
+- Camada HTTP: JwtAuthenticationFilter intercepta todas as chamadas REST.
+
+- Camada WebSocket: WebSocketJwtInterceptor intercepta o handshake da conexão em tempo real, validando o token antes de permitir o acesso ao chat.
+
+##  🚫 Blindagem de Identidade
+O sistema ignora IDs enviados pelo Front-end para identificar o remetente. O ID do usuário é extraído diretamente do Token (Principal), impedindo que um usuário se passe por outro (Spoofing).
 
 ## 🧩 Conceitos principais do sistema
+🏢 Negócio
+- Representa o serviço cadastrado na plataforma (Ex: EasyBiz Barbearia). Um negócio pertence a um usuário.
 
-### 🏢 Negócio
+📦 Pedido de Serviço (A "Sala de Negociação")
+- É a entidade central que conecta Cliente e Prestador. Cada serviço novo gera um Pedido Único (ID), garantindo que negociações passadas não se misturem com as novas.
 
-Representa o serviço cadastrado na plataforma.
+🔄 Ciclo de Vida do Pedido (Workflow)
+- O pedido segue uma máquina de estados rigorosa para garantir a consistência do serviço:
 
-Exemplos:
+### ABERTO: Cliente criou o pedido. Aguardando resposta.
 
-* EasyBiz Barbearia
-* Mecânico João
-* Pedreiro Carlos
+### EM_NEGOCIACAO: (Opcional) Troca de mensagens antes do aceite.
 
-Um negócio pertence a **um usuário**.
+### ACEITO: Prestador aceitou o serviço (via PATCH /aceitar).
 
----
+### RECUSADO: Prestador não pode atender (via PATCH /recusar).
 
-### ⚙️ Configuração do Negócio (NegocioConfig)
+### CONCLUIDO: Serviço finalizado pelo prestador (via PATCH /concluir). Libera avaliação.
 
-Define informações **básicas de funcionamento**, como:
+Regra de Ouro: Não é possível concluir um pedido que não foi aceito.
 
-* Horário de abertura e fechamento (opcional)
-* Dias da semana que costuma atender
-* Se aceita agendamentos
+## 💬 Módulo de Chat (Híbrido)
+O chat foi desenhado para ser resiliente e escalável, utilizando uma abordagem híbrida:
 
-⚠️ Importante: esses horários **não são obrigatórios nem rígidos**. Eles servem apenas como **referência para o cliente**.
+1️⃣ REST (Histórico)
+- Endpoint: GET /pedidos/{id}/mensagens
 
----
+- Função: Carrega todas as mensagens anteriores ao entrar na tela.
 
-### 📦 Pedido de Serviço
+- Segurança: Garante que apenas os participantes do pedido (Cliente ou Dono do Negócio) visualizem o histórico.
 
-É o primeiro contato entre cliente e negócio.
+## 2️⃣ WebSocket (Tempo Real)
+- Endpoint: /ws-chat
 
-Contém:
+- Protocolo: STOMP sobre SockJS.
 
-* Cliente que solicitou
-* Negócio escolhido
-* Descrição do serviço
-* Data desejada (opcional)
-* Status do pedido (ABERTO, EM_NEGOCIACAO, FECHADO, CANCELADO)
+- Tópicos: /topic/mensagens/{pedidoId}
 
-O pedido funciona como um **"inbox"**, onde a conversa começa.
-
----
-
-### 💬 Mensagens (Chat)
-
-O módulo de Chat permite a comunicação em tempo real entre cliente e prestador dentro de um Pedido de Serviço, com persistência em banco e suporte a WebSocket.
-
-## 🎯 Objetivo
-
-- Permitir troca de mensagens em tempo real
-
-- Garantir histórico completo da conversa
-
-- Isolar mensagens por pedido
-
-- Suportar escalabilidade (modelo enterprise)
-t é composto por 3 camadas:
-
-## 1️⃣ REST (HTTP)
-
-Usado para:
-
-- Buscar histórico
-
-- Fallback (caso WebSocket caia)
-
-- Auditoria
-
-## 2️⃣ WebSocket (STOMP)
-
-Usado para:
-
-- Mensagens em tempo real
-
-- Experiência fluida (sem refresh)
-
-## 3️⃣ Banco de Dados
-
-Usado para:
-
-- Persistência
-
-- Compliance
-
-- Logs históricos
-
-## Entidades Envolvidas
-- Mensagem
-
-- Representa uma mensagem enviada no chat de um pedido.
-
-Relacionamentos:
-
-- PedidoServico (ManyToOne)
-
-- Usuario (remetente)
-
-- Campos principais:
-
-- conteudo
-
-- enviadoEm
-
-## 🔄 Fluxo principal do sistema
-
-1. Usuário se cadastra
-2. Usuário cria um negócio
-3. Negócio define (opcionalmente) horários e dias
-4. Cliente busca serviços por categoria
-5. Cliente escolhe um negócio
-6. Cliente cria um pedido de serviço
-7. Cliente e dono negociam via chat
-8. Serviço é fechado ou cancelado
-
----
+- Segurança: O Interceptor valida o JWT no cabeçalho Authorization: Bearer ... durante a conexão. Se o token for inválido, o socket é desconectado imediatamente (Status 403).
 
 ## 🏗️ Estrutura do projeto (Backend)
-
-O projeto segue uma arquitetura em camadas:
+O projeto segue uma arquitetura em camadas bem definidas:
 
 ```
+
 br.com.easybiz
-├── config        # Segurança, Swagger, configurações gerais
-├── controller    # Controllers REST (API)
-├── dto           # DTOs de entrada e saída
-├── model         # Entidades JPA
-├── repository    # Repositórios (JPA)
-├── service       # Regras de negócio
+├── config        # SecurityConfig, WebSocketConfig, Interceptors
+├── controller    # Endpoints REST (Auth, Chat, Pedido, Negocio)
+├── dto           # Records para transferência de dados (Request/Response)
+├── enums         # StatusPedido, TipoNegocio
+├── model         # Entidades JPA (Usuario, Pedido, Mensagem)
+├── repository    # Interfaces Spring Data
+├── security      # JwtService, Filters
+├── service       # Regras de negócio e Validações
 └── EasybizApplication.java
+
 ```
 
----
 
-## 🔐 Segurança
+## 📚 Documentação da API (Swagger)
+A documentação viva está disponível e atualizada com as novas rotas de ciclo de vida.
 
-Atualmente o projeto está em **modo de desenvolvimento**, com:
+📍 Acesso Local: http://localhost:8080/swagger-ui/index.html
 
-* CSRF desabilitado
-* Rotas abertas para cadastro e testes
+## Principais recursos documentados:
 
-⚠️ A segurança será evoluída futuramente com:
+- Auth: Login e geração de token.
 
-* Autenticação JWT
-* Autorização por perfil
-* Proteção de rotas
+- Pedidos: Criação e transição de status (Aceitar/Recusar).
 
----
+- Chat: Histórico e envio de mensagens.
 
-## 📚 Documentação da API
-
-O projeto utilizará **Swagger / OpenAPI** para documentação viva da API.
-
-Isso permitirá:
-
-* Visualizar todas as rotas
-* Testar endpoints
-* Facilitar integração com frontend
-
-📌 *Swagger será configurado na próxima etapa.*
-http://localhost:8080/swagger-ui/index.html
-
-## Usamos anotações do springdoc-openapi:
-
-@Tag
-
-@Operation
-
-@ApiResponses
-
-@Scheme
-
+- Negócios: CRUD e busca.
 
 ## 🛠️ Status do projeto
+- 🟢 Core Backend Finalizado
 
-🟡 **Em desenvolvimento ativo**
+## Funcionalidades Entregues:
 
-Funcionalidades já implementadas:
+- ✅ Cadastro e Login (JWT)
 
-* Cadastro de usuários
-* Cadastro de negócios
-* Configuração básica de negócio
-* Criação de pedido de serviço
+- ✅ Gestão de Negócios
 
-Próximas etapas:
+- ✅ Criação de Pedidos
 
-* Módulo de mensagens (chat)
-* Swagger
-* Melhorias de segurança
-* Filtros por região
-* Destaque de negócios
+- ✅ Chat Real-Time Seguro (WebSocket + JWT)
 
----
+- ✅ Workflow de Status do Pedido
 
-## 🤝 Contribuição
+- ✅ Validação de segurança por Pedido
 
-Este projeto está em fase inicial.
-
-Sugestões, melhorias e feedback são bem-vindos.
-
----
-
-## 📌 Visão futura
-
-O EasyBiz pretende se tornar um **marketplace de serviços flexível**, simples e acessível, conectando pessoas a profissionais de forma rápida e humana.
-
----
+Próximas etapas (Foco no App Mobile):
 
 📍 *Projeto criado e mantido por Natanael Lopes*

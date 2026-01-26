@@ -43,4 +43,47 @@ public class PedidoServicoService {
 
         return pedidoServicoRepository.save(pedido);
     }
+    public PedidoServico aceitarPedido(Long pedidoId) {
+        PedidoServico pedido = pedidoServicoRepository.findById(pedidoId)
+                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+
+        // Regra: Só pode aceitar se estiver ABERTO ou negociando
+        if (pedido.getStatus() == StatusPedido.CONCLUIDO || 
+            pedido.getStatus() == StatusPedido.CANCELADO || 
+            pedido.getStatus() == StatusPedido.RECUSADO ||
+            pedido.getStatus() == StatusPedido.ACEITO) {
+            throw new IllegalStateException("Este pedido não pode mais ser aceito (Status atual: " + pedido.getStatus() + ")");
+        }
+
+        pedido.setStatus(StatusPedido.ACEITO);
+        // Dica futura: Aqui poderíamos enviar uma Notificação Push para o cliente avisando!
+        return pedidoServicoRepository.save(pedido);
+    }
+
+    // 2. RECUSAR PEDIDO (O Prestador não pode fazer)
+    public PedidoServico recusarPedido(Long pedidoId) {
+        PedidoServico pedido = pedidoServicoRepository.findById(pedidoId)
+                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+
+        if (pedido.getStatus() == StatusPedido.CONCLUIDO) {
+            throw new IllegalStateException("Não é possível recusar um serviço já finalizado.");
+        }
+
+        pedido.setStatus(StatusPedido.RECUSADO);
+        return pedidoServicoRepository.save(pedido);
+    }
+
+    // 3. CONCLUIR PEDIDO (Serviço feito)
+    public PedidoServico concluirPedido(Long pedidoId) {
+        PedidoServico pedido = pedidoServicoRepository.findById(pedidoId)
+                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+
+        // Regra: O serviço precisava ter sido aceito antes
+        if (pedido.getStatus() != StatusPedido.ACEITO) {
+            throw new IllegalStateException("O pedido precisa estar ACEITO para ser concluído.");
+        }
+
+        pedido.setStatus(StatusPedido.CONCLUIDO);
+        return pedidoServicoRepository.save(pedido);
+    }
 }

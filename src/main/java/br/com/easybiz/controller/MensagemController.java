@@ -30,7 +30,7 @@ public class MensagemController {
 	@PostMapping
 	public ResponseEntity<MensagemResponseDTO> enviar(@PathVariable Long pedidoId,
 			@RequestBody @Valid EnviarMensagemDTO dto) {
-		return ResponseEntity.ok(mensagemService.enviarMensagem(pedidoId, dto));
+		return ResponseEntity.ok(mensagemService.enviarMensagem(pedidoId, dto.usuarioId(), dto.conteudo()));
 	}
 
 	@Operation(summary = "Histórico de conversa", description = "Lista todas as mensagens do pedido em ordem cronológica.")
