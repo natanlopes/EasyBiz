@@ -189,6 +189,11 @@ A documentação viva está disponível e atualizada com as novas rotas de ciclo
 
 - ✅ Validação de segurança por Pedido
 
-Próximas etapas (Foco no App Mobile):
+## ⚠️ Toda alteração de endpoint exige:
+- Atualização do Swagger
+- Atualização da docs/API.md
+
+
+
 
 📍 *Projeto criado e mantido por Natanael Lopes*
