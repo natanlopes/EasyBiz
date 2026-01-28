@@ -6,6 +6,9 @@ import br.com.easybiz.service.PedidoServicoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 @Tag(name = "Pedidos de Serviço", description = "Pedidos iniciados por clientes")
@@ -49,6 +52,18 @@ public class PedidoServicoController {
     @PatchMapping("/{id}/concluir")
     public ResponseEntity<PedidoServico> concluirPedido(@PathVariable Long id) {
         return ResponseEntity.ok(pedidoServicoService.concluirPedido(id));
+    }
+    
+    @Operation(summary = "Listar pedidos do Cliente", description = "Histórico de compras do usuário")
+    @GetMapping("/cliente/{clienteId}") // <--- A URL que você perguntou!
+    public ResponseEntity<List<PedidoServico>> listarPorCliente(@PathVariable Long clienteId) {
+        return ResponseEntity.ok(pedidoServicoService.listarPorCliente(clienteId));
+    }
+
+    @Operation(summary = "Listar pedidos do Prestador", description = "Agenda de serviços do dono do negócio")
+    @GetMapping("/prestador/{prestadorId}")
+    public ResponseEntity<List<PedidoServico>> listarPorPrestador(@PathVariable Long prestadorId) {
+        return ResponseEntity.ok(pedidoServicoService.listarPorPrestador(prestadorId));
     }
 }
 

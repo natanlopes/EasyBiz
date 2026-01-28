@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "mensagem")
 @Getter
@@ -17,7 +19,8 @@ public class Mensagem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "pedido_servico_id", nullable = false)
     private PedidoServico pedidoServico;

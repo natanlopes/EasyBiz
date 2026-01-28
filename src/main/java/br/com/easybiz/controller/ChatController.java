@@ -5,14 +5,13 @@ import br.com.easybiz.dto.EnviarMensagemDTO;
 import br.com.easybiz.dto.MensagemLidaDTO;
 import br.com.easybiz.dto.MensagemResponseDTO;
 import br.com.easybiz.service.MensagemService;
-
-import java.security.Principal;
-import java.time.LocalDateTime;
-
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+
+import java.security.Principal;
+import java.time.LocalDateTime;
 
 @Controller
 public class ChatController {
@@ -20,23 +19,23 @@ public class ChatController {
     private final MensagemService mensagemService;
     private final SimpMessagingTemplate messagingTemplate;
 
-    public ChatController(
-            MensagemService mensagemService,
-            SimpMessagingTemplate messagingTemplate
-    ) {
+    public ChatController(MensagemService mensagemService, SimpMessagingTemplate messagingTemplate) {
         this.mensagemService = mensagemService;
         this.messagingTemplate = messagingTemplate;
     }
 
-    // 🔹 1. ENVIO DE MENSAGEM (JWT manda no remetente)
+    /**
+     *  1. Envio de Mensagem
+     * Rota STOMP: /app/chat/{pedidoId}
+     * Payload: EnviarMensagemDTO
+     */
     @MessageMapping("/chat/{pedidoId}")
     public void enviarMensagemEmTempoReal(
             @DestinationVariable Long pedidoId,
             EnviarMensagemDTO dto,
             Principal principal
     ) {
-
-        // 🔐 ID REAL vem do JWT
+        //  Segurança: O ID do remetente é extraído do Token JWT (Principal)
         Long remetenteId = Long.valueOf(principal.getName());
 
         MensagemResponseDTO mensagem = mensagemService.enviarMensagem(
@@ -45,14 +44,17 @@ public class ChatController {
                 dto.conteudo()
         );
 
-        // 📡 envia para o tópico
+        //  Envia para quem assina: /topic/mensagens/{pedidoId}
         messagingTemplate.convertAndSend(
                 "/topic/mensagens/" + pedidoId,
                 mensagem
         );
     }
 
-    // 🔹 2. DIGITANDO (não persiste)
+    /**
+     * 2. Notificação de "Digitando..."
+     * Rota STOMP: /app/chat/{pedidoId}/digitando
+     */
     @MessageMapping("/chat/{pedidoId}/digitando")
     public void digitando(
             @DestinationVariable Long pedidoId,
@@ -67,7 +69,10 @@ public class ChatController {
         );
     }
 
-    // 🔹 3. MENSAGEM LIDA
+    /**
+     *  3. Confirmação de Leitura
+     * Rota STOMP: /app/chat/{pedidoId}/lida/{mensagemId}
+     */
     @MessageMapping("/chat/{pedidoId}/lida/{mensagemId}")
     public void confirmarLeitura(
             @DestinationVariable Long pedidoId,
@@ -76,14 +81,10 @@ public class ChatController {
     ) {
         Long quemLeuId = Long.valueOf(principal.getName());
 
-        // salva leitura
-        mensagemService.marcarMensagemEspecifica(
-                pedidoId,
-                mensagemId,
-                quemLeuId
-        );
+        // 1. Persiste no banco que foi lido
+        mensagemService.marcarMensagemEspecifica(pedidoId, mensagemId, quemLeuId);
 
-        // avisa "lida"
+        // 2. Avisa em tempo real: /topic/mensagens/{pedidoId}/lida
         messagingTemplate.convertAndSend(
                 "/topic/mensagens/" + pedidoId + "/lida",
                 new MensagemLidaDTO(
@@ -94,12 +95,9 @@ public class ChatController {
                 )
         );
 
-        // último visto
-        var ultimoVisto = mensagemService.buscarUltimoVisto(
-                pedidoId,
-                quemLeuId
-        );
-
+        // 3. Atualiza status de "Visto por último"
+        var ultimoVisto = mensagemService.buscarUltimoVisto(pedidoId, quemLeuId);
+        
         messagingTemplate.convertAndSend(
                 "/topic/mensagens/" + pedidoId + "/ultimo-visto",
                 ultimoVisto

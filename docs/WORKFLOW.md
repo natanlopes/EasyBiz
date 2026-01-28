@@ -27,3 +27,10 @@ Após a conclusão de um pedido, o cliente pode avaliar o serviço prestado.
 ### Efeitos
 - A avaliação impacta a reputação pública do prestador.
 - A avaliação fica visível no perfil do negócio/prestador.
+
+### Busca
+- Usuário envia localização →
+- Backend calcula distância →
+- Ordena por avaliação →
+- Retorna lista otimizada para UX
+

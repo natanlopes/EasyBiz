@@ -8,6 +8,7 @@ import br.com.easybiz.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class PedidoServicoService {
@@ -85,5 +86,16 @@ public class PedidoServicoService {
 
         pedido.setStatus(StatusPedido.CONCLUIDO);
         return pedidoServicoRepository.save(pedido);
+    }
+
+
+    // Listar pedidos do Cliente (Para a tela "Meus Pedidos")
+    public List<PedidoServico> listarPorCliente(Long clienteId) {
+        return pedidoServicoRepository.findAllByClienteId(clienteId);
+    }
+
+    // Listar pedidos do Prestador (Para a tela "Minha Agenda")
+    public List<PedidoServico> listarPorPrestador(Long prestadorId) {
+        return pedidoServicoRepository.findAllByNegocioUsuarioId(prestadorId);
     }
 }

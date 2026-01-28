@@ -9,12 +9,16 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 @Tag(name = "Negócios", description = "Gerenciamento de negócios cadastrados na plataforma")
 @RestController
 @RequestMapping("/negocios")
 @RequiredArgsConstructor
+
 public class NegocioController {
 
     private final NegocioService negocioService;
@@ -43,9 +47,21 @@ public class NegocioController {
         Negocio negocio = negocioService.criarNegocio(
                 dto.usuarioId(),
                 dto.nome(),
-                dto.tipo()
+                dto.categoria()
         );
         return ResponseEntity.ok(negocio);
+    }
+
+    @GetMapping("/busca")
+    @Operation(summary = "Busca inteligente por localização e ranking")
+    public ResponseEntity<List<Negocio>> buscar(
+        @RequestParam Double lat,
+        @RequestParam Double lon,
+        @RequestParam(required = false) String busca
+    ) {
+        return ResponseEntity.ok(
+            negocioService.buscarNegocios(lat, lon, busca)
+        );
     }
 }
 

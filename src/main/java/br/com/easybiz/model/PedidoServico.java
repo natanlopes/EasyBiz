@@ -6,6 +6,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "pedido_servico")
 @Getter
@@ -40,6 +42,7 @@ public class PedidoServico {
     // Data desejada (flexível)
     private LocalDateTime dataDesejada;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "pedidoServico", cascade = CascadeType.ALL)
     private List<Mensagem> mensagens;
 

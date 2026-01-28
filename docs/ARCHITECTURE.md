@@ -32,3 +32,10 @@ Não usamos o WebSocket para buscar histórico para evitar sobrecarga no broker 
 ## 5. Escalabilidade
 O sistema está preparado para rodar em containers (Docker).
 Como a autenticação é via JWT (Stateless), é possível subir múltiplas instâncias da API atrás de um Load Balancer sem quebrar a sessão do usuário.
+
+## 6. Busca Inteligente
+A busca utiliza cálculo de distância (Haversine) diretamente no banco,
+reduzindo carga no backend e garantindo performance.
+
+A nota média é armazenada no negócio para evitar cálculos em tempo real.
+

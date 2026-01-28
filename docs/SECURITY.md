@@ -31,3 +31,8 @@ O sistema **ignora** qualquer ID de usuário enviado no corpo do JSON (Payload) 
 ## 4. Isolamento de Dados
 - Um usuário só pode ler mensagens de um pedido se for o **Cliente** ou o **Dono do Negócio** daquele pedido.
 - Tentativas de acesso a pedidos alheios resultam em `403 Forbidden` ou `SecurityException`.
+
+## 5. Busca de Profissional
+- Endpoint GET /negocios/busca é público
+- Nenhuma informação sensível é exposta
+- Endpoints de criação exigem autenticação JWT

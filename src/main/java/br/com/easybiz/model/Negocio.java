@@ -21,22 +21,41 @@ public class Negocio {
     @Column(nullable = false)
     private String nome;
 
+    /**
+     * Categoria principal do negócio
+     * Ex: PEDREIRO, ELETRICISTA, BARBEIRO
+     */
     @Column(nullable = false)
-    private String tipo;
+    private String categoria;
 
     @ManyToOne
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean ativo = true;
 
-    @Column(name = "criado_em")
+    @Column(name = "criado_em", updatable = false)
     private LocalDateTime criadoEm;
+
+    private Double latitude;
+    private Double longitude;
+    private String enderecoCompleto;
+
+    /**
+     * Nota média calculada a partir das avaliações
+     * Mantida no negócio para otimizar buscas
+     */
+    @Builder.Default
+    @Column(name = "nota_media")
+    private Double notaMedia = 0.0;
 
     @PrePersist
     public void prePersist() {
         this.criadoEm = LocalDateTime.now();
+        if (this.ativo == null) this.ativo = true;
+        if (this.notaMedia == null) this.notaMedia = 0.0;
     }
 
 	public Long getId() {
@@ -55,12 +74,12 @@ public class Negocio {
 		this.nome = nome;
 	}
 
-	public String getTipo() {
-		return tipo;
+	public String getCategoria() {
+		return categoria;
 	}
 
-	public void setTipo(String tipo) {
-		this.tipo = tipo;
+	public void setCategoria(String categoria) {
+		this.categoria = categoria;
 	}
 
 	public Usuario getUsuario() {
@@ -86,5 +105,37 @@ public class Negocio {
 	public void setCriadoEm(LocalDateTime criadoEm) {
 		this.criadoEm = criadoEm;
 	}
-}
 
+	public Double getLatitude() {
+		return latitude;
+	}
+
+	public void setLatitude(Double latitude) {
+		this.latitude = latitude;
+	}
+
+	public Double getLongitude() {
+		return longitude;
+	}
+
+	public void setLongitude(Double longitude) {
+		this.longitude = longitude;
+	}
+
+	public String getEnderecoCompleto() {
+		return enderecoCompleto;
+	}
+
+	public void setEnderecoCompleto(String enderecoCompleto) {
+		this.enderecoCompleto = enderecoCompleto;
+	}
+
+	public Double getNotaMedia() {
+		return notaMedia;
+	}
+
+	public void setNotaMedia(Double notaMedia) {
+		this.notaMedia = notaMedia;
+	}
+    
+}

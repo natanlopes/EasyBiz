@@ -217,6 +217,29 @@ Cliente avalia o serviço.
 
 ---
 
+
+## 🔹 8) Busca Inteligente de Negócios
+
+### GET /negocios/busca
+
+### Descrição
+Busca negócios próximos ao usuário com priorização automática:
+
+1. Melhor avaliação
+2. Proximidade geográfica
+3. Correção de erros comuns de digitação
+
+### Query Params
+- lat (Double) – latitude do usuário
+- lon (Double) – longitude do usuário
+- busca (String, opcional) – categoria aproximada
+
+### Regras
+- Caso a categoria não seja reconhecida, a busca retorna todos os negócios da região
+- Resultados ordenados por nota média
+
+
+
 ## ❌ Padronização de Erros
 
 ```json
