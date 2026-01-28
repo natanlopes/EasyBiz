@@ -37,5 +37,5 @@ Como a autenticação é via JWT (Stateless), é possível subir múltiplas inst
 A busca utiliza cálculo de distância (Haversine) diretamente no banco,
 reduzindo carga no backend e garantindo performance.
 
-A nota média é armazenada no negócio para evitar cálculos em tempo real.
+A nota média do negócio é recalculada a cada nova avaliação e persistida na entidade Negocio para otimizar buscas e rankings.
 

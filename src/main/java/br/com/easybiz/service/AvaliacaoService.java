@@ -3,7 +3,10 @@ package br.com.easybiz.service;
 import br.com.easybiz.dto.AvaliacaoDTO;
 import br.com.easybiz.model.*;
 import br.com.easybiz.repository.AvaliacaoRepository;
+import br.com.easybiz.repository.NegocioRepository;
 import br.com.easybiz.repository.PedidoServicoRepository;
+import jakarta.transaction.Transactional;
+
 import org.springframework.stereotype.Service;
 
 @Service
@@ -11,12 +14,15 @@ public class AvaliacaoService {
 
     private final AvaliacaoRepository avaliacaoRepository;
     private final PedidoServicoRepository pedidoRepository;
+    private final NegocioRepository negocioRepository;
 
-    public AvaliacaoService(AvaliacaoRepository avaliacaoRepository, PedidoServicoRepository pedidoRepository) {
-        this.avaliacaoRepository = avaliacaoRepository;
-        this.pedidoRepository = pedidoRepository;
-    }
-
+	public AvaliacaoService(AvaliacaoRepository avaliacaoRepository, PedidoServicoRepository pedidoRepository,
+			NegocioRepository negocioRepository) {
+		this.avaliacaoRepository = avaliacaoRepository;
+		this.pedidoRepository = pedidoRepository;
+		this.negocioRepository = negocioRepository;
+	}
+	@Transactional
     public Avaliacao avaliarPedido(Long pedidoId, Long usuarioLogadoId, AvaliacaoDTO dto) {
         PedidoServico pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
@@ -52,6 +58,14 @@ public class AvaliacaoService {
         avaliacao.setNota(dto.nota());
         avaliacao.setComentario(dto.comentario());
 
-        return avaliacaoRepository.save(avaliacao);
+        avaliacao = avaliacaoRepository.save(avaliacao);
+        
+        Negocio negocio = pedido.getNegocio();
+        Double novaMedia = avaliacaoRepository.calcularMediaDoNegocio(negocio.getId());
+        
+        negocio.setNotaMedia(novaMedia); // Atualiza o campo cached
+        negocioRepository.save(negocio); // Grava no banco
+
+        return avaliacao;
     }
 }
