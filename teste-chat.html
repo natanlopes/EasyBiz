@@ -1,216 +1,151 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>EasyBiz Chat - Seguro 🔒</title>
+    <title>EasyBiz Chat - Profissional 🚀</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #e5ddd5; padding: 20px; }
-        #chat-container { max-width: 500px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow: hidden; }
+        #chat-container { max-width: 500px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; height: 90vh; }
         
         #header { background-color: #075e54; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-        .header-info { display: flex; flex-direction: column; }
-        .last-seen { font-size: 11px; font-weight: normal; opacity: 0.8; margin-top: 2px; }
-
-        #conversa { height: 350px; overflow-y: scroll; padding: 15px; background: #e5ddd5; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
         
-        .msg-row { display: flex; margin-bottom: 10px; flex-direction: column; }
-        .msg { padding: 8px 12px; border-radius: 7px; max-width: 70%; position: relative; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        #conversa { flex-grow: 1; overflow-y: scroll; padding: 15px; background: #e5ddd5; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
         
-        .msg-clickable { cursor: pointer; transition: background 0.2s; }
-        .msg-clickable:active { transform: scale(0.98); }
-
-        .eu-row { align-items: flex-end; }
-        .eu { background-color: #dcf8c6; border-top-right-radius: 0; }
+        .msg-row { display: flex; margin-bottom: 15px; align-items: flex-end; }
+        .msg { padding: 8px 12px; border-radius: 7px; max-width: 70%; position: relative; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); word-wrap: break-word;}
         
-        .outro-row { align-items: flex-start; }
-        .outro { background-color: #ffffff; border-top-left-radius: 0; }
+        /* AVATAR */
+        .avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; margin-bottom: 2px; border: 1px solid #ccc; background: white; }
+
+        /* LADO DIREITO (EU) */
+        .eu-row { justify-content: flex-end; }
+        .eu { background-color: #dcf8c6; border-top-right-radius: 0; margin-right: 5px; }
         
-        .status-lida { font-size: 10px; color: #34b7f1; text-align: right; margin-top: 2px; display: none; } 
-        .status-lida.visto { display: block; }
-
-        .msg-id { font-size: 9px; color: #999; margin-bottom: 2px; }
-
-        #digitando { height: 20px; font-size: 12px; color: #075e54; font-weight: bold; padding: 0 15px; background: white; font-style: italic; display: flex; align-items: center;}
+        /* LADO ESQUERDO (OUTRO) */
+        .outro-row { justify-content: flex-start; }
+        .outro { background-color: #ffffff; border-top-left-radius: 0; margin-left: 5px; }
+        
+        .msg-nome { font-size: 10px; color: #e542a3; font-weight: bold; margin-bottom: 2px; display: block;}
         
         .input-area { padding: 10px; background: #f0f0f0; display: flex; gap: 10px; }
         input { flex-grow: 1; padding: 10px; border: none; border-radius: 20px; outline: none; }
         button { padding: 10px 20px; background-color: #075e54; color: white; border: none; border-radius: 50%; cursor: pointer; }
         
-        .setup { margin-bottom: 20px; padding: 10px; background: white; border-radius: 5px; display: flex; gap: 10px; flex-wrap: wrap;}
+        .setup { margin-bottom: 10px; padding: 10px; background: white; border-radius: 5px; display: flex; gap: 10px; }
     </style>
 </head>
 <body>
 
 <div class="setup">
     <input type="text" id="tokenJwt" placeholder="Cole o Token JWT aqui..." style="flex-grow: 1;">
-    
-    <input type="number" id="usuarioId" placeholder="Meu ID Visual" value="7" style="width: 100px">
-    
-    <button onclick="conectar()" style="border-radius: 5px; width: auto; background-color: #075e54; color: white;">Conectar Seguro 🔒</button>
+    <button onclick="iniciarChat()">Entrar no Chat 💬</button>
 </div>
 
 <div id="chat-container">
     <div id="header">
-        <div class="header-info" id="header-content">
-            EasyBiz Chat
-        </div>
+        <div class="header-info">EasyBiz Chat</div>
         <span id="status-conn">🔴</span>
     </div>
     
     <div id="conversa"></div>
     
-    <div id="digitando"></div>
-    
     <div class="input-area">
-        <input type="text" id="conteudo" placeholder="Digite uma mensagem..." 
-               oninput="avisarDigitando()"> 
+        <input type="text" id="conteudo" placeholder="Digite uma mensagem..." onkeydown="if(event.key === 'Enter') enviar()"> 
         <button onclick="enviar()">➤</button>
     </div>
 </div>
 
 <script>
     var stompClient = null;
-    var pedidoId = 4; 
-    var timeoutDigitando = null;
+    var pedidoId = 1; // ⚠️ Garanta que o Pedido 1 existe e está ABERTO/EM_ANDAMENTO
+    var meuUsuarioId = null;
 
-    function conectar() {
-        if (stompClient !== null) return;
+    // Decodifica o JWT para pegar o ID automaticamente (sem erro manual!)
+    function parseJwt (token) {
+        var base64Url = token.split('.')[1];
+        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    }
 
-        // MUDANÇA 2: Pegar o token
+    function iniciarChat() {
         var token = document.getElementById('tokenJwt').value;
-        if (!token) {
-            alert("⚠️ Cole o Token JWT para entrar!");
-            return;
+        if (!token) { alert("⚠️ Cole o Token JWT!"); return; }
+
+        // 1. Descobre quem sou eu pelo Token
+        try {
+            var payload = parseJwt(token);
+            meuUsuarioId = payload.sub; // 'sub' geralmente guarda o ID no seu sistema
+            console.log("Meu ID extraído do token: " + meuUsuarioId);
+        } catch (e) {
+            alert("Token inválido!"); return;
         }
 
-		var socket = new SockJS('http://localhost:8080/ws-chat');
+        // 2. Carrega Histórico Antigo (API REST)
+        carregarHistorico(token);
 
+        // 3. Conecta WebSocket
+        conectarWebSocket(token);
+    }
+
+    function carregarHistorico(token) {
+        fetch('http://localhost:8080/chat/' + pedidoId, {
+            method: 'GET',
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(response => response.json())
+        .then(mensagens => {
+            var div = document.getElementById('conversa');
+            div.innerHTML = ""; // Limpa antes de carregar
+            mensagens.forEach(msg => mostrarMensagem(msg));
+        })
+        .catch(err => console.error("Erro ao carregar histórico:", err));
+    }
+
+    function conectarWebSocket(token) {
+        if (stompClient !== null) return;
+        var socket = new SockJS('http://localhost:8080/ws-chat');
         stompClient = Stomp.over(socket);
 
-        // MUDANÇA 3: Enviar o Header Authorization
-        var headers = {
-            'Authorization': 'Bearer ' + token
-        };
-
-        stompClient.connect(headers, function () {
-            document.getElementById('status-conn').innerText = "🟢 Conectado Seguro";
-            alert("Conectado via JWT! 🛡️");
-
-            // 1. Ouvir Mensagens
+        stompClient.connect({ 'Authorization': 'Bearer ' + token }, function () {
+            document.getElementById('status-conn').innerText = "🟢 Conectado (ID " + meuUsuarioId + ")";
+            
             stompClient.subscribe('/topic/mensagens/' + pedidoId, function (msg) {
                 mostrarMensagem(JSON.parse(msg.body));
             });
-
-            // 2. Ouvir Digitando
-            stompClient.subscribe('/topic/mensagens/' + pedidoId + '/digitando', function (msg) {
-                let dto = JSON.parse(msg.body);
-                // Nota: O usuarioId aqui é usado apenas visualmente
-                let meuId = document.getElementById('usuarioId').value; 
-                let div = document.getElementById('digitando');
-
-                if (dto.usuarioId != meuId && dto.digitando) {
-                    div.innerText = (dto.usuarioNome || "Alguém") + " está digitando...";
-                } else {
-                    div.innerText = "";
-                }
-            });
-
-            // 3. Ouvir "LIDA" (LÓGICA INTELIGENTE / BATCH)
-            stompClient.subscribe('/topic/mensagens/' + pedidoId + '/lida', function (msg) {
-                let dto = JSON.parse(msg.body);
-                let meuId = document.getElementById('usuarioId').value;
-
-                if (dto.quemLeuId != meuId) {
-                    let minhasMensagens = document.querySelectorAll('.eu-row');
-                    minhasMensagens.forEach(row => {
-                        let idTexto = row.id.replace('msg-', '');
-                        let idMsg = parseInt(idTexto);
-
-                        if (idMsg <= dto.mensagemId) {
-                            let check = row.querySelector('.status-lida');
-                            if (check) check.classList.add('visto');
-                        }
-                    });
-                }
-            });
-
-            // 4. Ouvir "VISTO POR ÚLTIMO"
-            stompClient.subscribe('/topic/mensagens/' + pedidoId + '/ultimo-visto', function (msg) {
-                let dto = JSON.parse(msg.body);
-                if (!dto.vistoEm) return;
-
-                let data = new Date(dto.vistoEm);
-                let hora = data.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                document.getElementById('header-content').innerHTML = 
-                    `EasyBiz Chat <span class="last-seen">Visto hoje às ${hora}</span>`;
-            });
-        }, function(error) {
-            console.log(error);
-            alert("❌ Erro de conexão! Token inválido ou expirado.");
-        });
+        }, function(error) { console.log(error); alert("Erro na conexão WS!"); });
     }
 
     function enviar() {
-        // O Backend agora usa o ID do Token, mas o DTO ainda pode esperar o campo
-        // Mandamos o ID visual só para manter compatibilidade se o DTO exigir, 
-        // mas a segurança do backend vai ignorar e usar o do Token.
-        var usuarioId = document.getElementById('usuarioId').value;
         var conteudo = document.getElementById('conteudo').value;
+        if(!conteudo) return;
         
-		stompClient.send("/app/chat/" + pedidoId, {}, JSON.stringify({
-		    'conteudo': conteudo
-		}));
-
+        stompClient.send("/app/chat/" + pedidoId, {}, JSON.stringify({'conteudo': conteudo}));
         document.getElementById('conteudo').value = "";
-    }
-
-    function avisarLeitura(mensagemId) {
-        let usuarioId = document.getElementById('usuarioId').value;
-        
-        stompClient.send("/app/chat/" + pedidoId + "/lida/" + mensagemId, {}, JSON.stringify({
-            usuarioId: usuarioId, 
-            usuarioNome: "",
-            digitando: false
-        }));
-    }
-
-    function avisarDigitando() {
-        enviarEvento("digitando", true);
-        clearTimeout(timeoutDigitando);
-        timeoutDigitando = setTimeout(() => enviarEvento("digitando", false), 1500);
-    }
-
-    function enviarEvento(tipo, status) {
-        if (!stompClient) return;
-        var id = document.getElementById('usuarioId').value;
-
-        stompClient.send("/app/chat/" + pedidoId + "/" + tipo, {}, JSON.stringify({
-            usuarioId: id,
-            usuarioNome: "Eu",
-            digitando: status
-        }));
     }
 
     function mostrarMensagem(msg) {
         var div = document.getElementById('conversa');
-        var meuId = document.getElementById('usuarioId').value;
-        var souEu = (msg.remetenteId == meuId);
+        
+        // Compara o ID da mensagem com o ID do meu Token
+        // Nota: O backend manda msg.remetenteId como número, o token extrai string. Usamos == para comparar.
+        var souEu = (msg.remetenteId == meuUsuarioId);
 
-        var clickEvent = !souEu ? `onclick="avisarLeitura(${msg.id})"` : '';
-        var classeClick = !souEu ? 'msg-clickable' : '';
+        var fotoUrl = msg.remetenteFotoUrl ? msg.remetenteFotoUrl : "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+        var imgHtml = `<img src="${fotoUrl}" class="avatar">`;
 
         var html = `
-            <div id="msg-${msg.id}" class="msg-row ${souEu ? 'eu-row' : 'outro-row'}">
-                <div class="msg ${souEu ? 'eu' : 'outro'} ${classeClick}" ${clickEvent}>
-                    <div class="msg-id">#${msg.id}</div>
+            <div class="msg-row ${souEu ? 'eu-row' : 'outro-row'}">
+                ${!souEu ? imgHtml : ''} 
+                <div class="msg ${souEu ? 'eu' : 'outro'}">
+                    ${!souEu ? `<span class="msg-nome">${msg.remetenteNome || ''}</span>` : ''}
                     ${msg.conteudo}
-                    ${souEu ? '<div class="status-lida">✅ Lida</div>' : ''}
                 </div>
             </div>
         `;
-        
         div.innerHTML += html;
         div.scrollTop = div.scrollHeight;
     }

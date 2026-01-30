@@ -1,11 +1,13 @@
 package br.com.easybiz.service;
 
 import br.com.easybiz.dto.CriarPedidoServicoDTO;
+import br.com.easybiz.dto.PedidoServicoResponseDTO; // Importe o DTO
 import br.com.easybiz.model.*;
 import br.com.easybiz.repository.NegocioRepository;
 import br.com.easybiz.repository.PedidoServicoRepository;
 import br.com.easybiz.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,26 +15,28 @@ import java.util.List;
 @Service
 public class PedidoServicoService {
 
-    private final PedidoServicoRepository pedidoServicoRepository;
+    private final PedidoServicoRepository pedidoRepository;
     private final UsuarioRepository usuarioRepository;
     private final NegocioRepository negocioRepository;
 
-    public PedidoServicoService(
-            PedidoServicoRepository pedidoServicoRepository,
-            UsuarioRepository usuarioRepository,
-            NegocioRepository negocioRepository
-    ) {
-        this.pedidoServicoRepository = pedidoServicoRepository;
+    public PedidoServicoService(PedidoServicoRepository pedidoRepository, UsuarioRepository usuarioRepository, NegocioRepository negocioRepository) {
+        this.pedidoRepository = pedidoRepository;
         this.usuarioRepository = usuarioRepository;
         this.negocioRepository = negocioRepository;
     }
 
-    public PedidoServico criarPedido(Long clienteId, CriarPedidoServicoDTO dto) {
+    // CRIAR
+    @Transactional
+    public PedidoServicoResponseDTO criar(Long clienteId, CriarPedidoServicoDTO dto) {
         Usuario cliente = usuarioRepository.findById(clienteId)
-                .orElseThrow(() -> new RuntimeException("Cliente (Usuário) não encontrado"));
+                .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
 
         Negocio negocio = negocioRepository.findById(dto.negocioId())
                 .orElseThrow(() -> new RuntimeException("Negócio não encontrado"));
+
+        if (negocio.getUsuario().getId().equals(clienteId)) {
+             throw new RuntimeException("Você não pode contratar seu próprio serviço.");
+        }
 
         PedidoServico pedido = new PedidoServico();
         pedido.setCliente(cliente);
@@ -42,60 +46,81 @@ public class PedidoServicoService {
         pedido.setStatus(StatusPedido.ABERTO);
         pedido.setCriadoEm(LocalDateTime.now());
 
-        return pedidoServicoRepository.save(pedido);
+        return toDTO(pedidoRepository.save(pedido)); // Retorna DTO seguro
     }
-    public PedidoServico aceitarPedido(Long pedidoId) {
-        PedidoServico pedido = pedidoServicoRepository.findById(pedidoId)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
 
-        // Regra: Só pode aceitar se estiver ABERTO ou negociando
-        if (pedido.getStatus() == StatusPedido.CONCLUIDO || 
-            pedido.getStatus() == StatusPedido.CANCELADO || 
-            pedido.getStatus() == StatusPedido.RECUSADO ||
-            pedido.getStatus() == StatusPedido.ACEITO) {
-            throw new IllegalStateException("Este pedido não pode mais ser aceito (Status atual: " + pedido.getStatus() + ")");
+    // ACEITAR
+    @Transactional
+    public void aceitar(Long pedidoId, Long usuarioLogadoId) {
+        PedidoServico pedido = buscarPedido(pedidoId);
+        validarDonoDoNegocio(pedido, usuarioLogadoId);
+
+        if (pedido.getStatus() != StatusPedido.ABERTO) {
+            throw new IllegalStateException("Pedido não está ABERTO.");
         }
-
         pedido.setStatus(StatusPedido.ACEITO);
-        // Dica futura: Aqui poderíamos enviar uma Notificação Push para o cliente avisando!
-        return pedidoServicoRepository.save(pedido);
+        pedidoRepository.save(pedido);
     }
 
-    // 2. RECUSAR PEDIDO (O Prestador não pode fazer)
-    public PedidoServico recusarPedido(Long pedidoId) {
-        PedidoServico pedido = pedidoServicoRepository.findById(pedidoId)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+    // RECUSAR
+    @Transactional
+    public void recusar(Long pedidoId, Long usuarioLogadoId) {
+        PedidoServico pedido = buscarPedido(pedidoId);
+        validarDonoDoNegocio(pedido, usuarioLogadoId);
 
         if (pedido.getStatus() == StatusPedido.CONCLUIDO) {
-            throw new IllegalStateException("Não é possível recusar um serviço já finalizado.");
+            throw new IllegalStateException("Não pode recusar serviço concluído.");
         }
-
         pedido.setStatus(StatusPedido.RECUSADO);
-        return pedidoServicoRepository.save(pedido);
+        pedidoRepository.save(pedido);
     }
 
-    // 3. CONCLUIR PEDIDO (Serviço feito)
-    public PedidoServico concluirPedido(Long pedidoId) {
-        PedidoServico pedido = pedidoServicoRepository.findById(pedidoId)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+    // CONCLUIR
+    @Transactional
+    public void concluir(Long pedidoId, Long usuarioLogadoId) {
+        PedidoServico pedido = buscarPedido(pedidoId);
+        validarDonoDoNegocio(pedido, usuarioLogadoId);
 
-        // Regra: O serviço precisava ter sido aceito antes
         if (pedido.getStatus() != StatusPedido.ACEITO) {
-            throw new IllegalStateException("O pedido precisa estar ACEITO para ser concluído.");
+            throw new IllegalStateException("Pedido precisa estar ACEITO.");
         }
-
         pedido.setStatus(StatusPedido.CONCLUIDO);
-        return pedidoServicoRepository.save(pedido);
+        pedidoRepository.save(pedido);
     }
 
-
-    // Listar pedidos do Cliente (Para a tela "Meus Pedidos")
-    public List<PedidoServico> listarPorCliente(Long clienteId) {
-        return pedidoServicoRepository.findAllByClienteId(clienteId);
+    // LISTAR MEUS PEDIDOS (Inteligente: serve para Cliente e Prestador)
+    public List<PedidoServicoResponseDTO> listarMeusPedidos(Long usuarioId) {
+        return pedidoRepository.findAll().stream()
+                .filter(p -> p.getCliente().getId().equals(usuarioId) ||
+                             p.getNegocio().getUsuario().getId().equals(usuarioId))
+                .map(this::toDTO)
+                .toList();
     }
 
-    // Listar pedidos do Prestador (Para a tela "Minha Agenda")
-    public List<PedidoServico> listarPorPrestador(Long prestadorId) {
-        return pedidoServicoRepository.findAllByNegocioUsuarioId(prestadorId);
+    // --- Auxiliares ---
+
+    private PedidoServico buscarPedido(Long id) {
+        return pedidoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+    }
+
+    private void validarDonoDoNegocio(PedidoServico pedido, Long usuarioId) {
+        if (!pedido.getNegocio().getUsuario().getId().equals(usuarioId)) {
+            throw new RuntimeException("Acesso negado: Apenas o prestador pode fazer isso.");
+        }
+    }
+
+    private PedidoServicoResponseDTO toDTO(PedidoServico pedido) {
+        return new PedidoServicoResponseDTO(
+                pedido.getId(),
+                pedido.getCliente().getId(),
+                pedido.getCliente().getNomeCompleto(),
+                pedido.getNegocio().getId(),
+                pedido.getNegocio().getNome(),
+                pedido.getDescricao(),
+                pedido.getDataDesejada(),
+                pedido.getStatus(),
+                pedido.getCriadoEm()
+        );
     }
 }

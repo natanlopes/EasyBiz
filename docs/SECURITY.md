@@ -36,3 +36,10 @@ O sistema **ignora** qualquer ID de usuário enviado no corpo do JSON (Payload) 
 - Endpoint GET /negocios/busca é público
 - Nenhuma informação sensível é exposta
 - Endpoints de criação exigem autenticação JWT
+
+### Gestão de Imagens
+- URLs de imagem são tratadas como dados comuns
+- O backend nunca aceita upload binário
+- Atualizações de imagem exigem autenticação JWT
+- O ID do usuário é sempre obtido via token
+

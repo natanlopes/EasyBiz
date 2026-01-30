@@ -73,7 +73,18 @@ public class NegocioService {
         return termo; 
     }
 
+    public void atualizarLogo(Long negocioId, Long usuarioLogadoId, String novaUrl) {
+        Negocio negocio = negocioRepository.findById(negocioId)
+                .orElseThrow(() -> new RuntimeException("Negócio não encontrado"));
 
+        // Verifica se o ID do dono do negócio bate com o ID de quem está logado
+        if (!negocio.getUsuario().getId().equals(usuarioLogadoId)) {
+            throw new SecurityException("Acesso negado: Você não é o dono deste negócio.");
+        }
+
+        negocio.setLogoUrl(novaUrl);
+        negocioRepository.save(negocio);
+    }
     
 }
 

@@ -35,6 +35,16 @@ public class Usuario {
     public void prePersist() {
         this.criadoEm = LocalDateTime.now();
     }
+    @Column(length = 500) 
+    private String fotoUrl;
+    
+	public String getFotoUrl() {
+		return fotoUrl;
+	}
+
+	public void setFotoUrl(String fotoUrl) {
+		this.fotoUrl = fotoUrl;
+	}
 
 	public Long getId() {
 		return id;

@@ -1,5 +1,6 @@
 package br.com.easybiz.controller;
 
+import br.com.easybiz.dto.AtualizarFotoDTO;
 import br.com.easybiz.dto.CriarNegocioDTO;
 import br.com.easybiz.model.Negocio;
 import br.com.easybiz.service.NegocioService;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import java.security.Principal;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -62,6 +64,20 @@ public class NegocioController {
         return ResponseEntity.ok(
             negocioService.buscarNegocios(lat, lon, busca)
         );
+    }
+    @PatchMapping("/{id}/logo")
+    @Operation(summary = "Atualizar Logo do Negócio", description = "Requer que o usuário logado seja o dono.")
+    public ResponseEntity<Void> atualizarLogo(
+            @PathVariable Long id, // ID do Negócio
+            @RequestBody @Valid AtualizarFotoDTO dto,
+            Principal principal // Quem está logado
+    ) {
+        Long usuarioLogadoId = Long.valueOf(principal.getName());
+        
+        // Passa para o service validar a propriedade
+        negocioService.atualizarLogo(id, usuarioLogadoId, dto.url());
+
+        return ResponseEntity.noContent().build();
     }
 }
 

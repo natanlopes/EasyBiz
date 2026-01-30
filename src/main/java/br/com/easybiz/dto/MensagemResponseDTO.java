@@ -27,7 +27,9 @@ public record MensagemResponseDTO(
         @Schema(description = "Mensagem lida")
         Boolean lida,
         @Schema(description = "Mensagem lida e data e horario")
-        LocalDateTime lidaEm
+        LocalDateTime lidaEm,
+        @Schema(description = "URL da foto do remetente", example = "https://...")
+        String remetenteFotoUrl
 ) {
 	
 	

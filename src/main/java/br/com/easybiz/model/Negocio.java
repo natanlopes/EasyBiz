@@ -57,6 +57,16 @@ public class Negocio {
         if (this.ativo == null) this.ativo = true;
         if (this.notaMedia == null) this.notaMedia = 0.0;
     }
+    @Column(length = 500)
+    private String logoUrl;
+    
+	public String getLogoUrl() {
+		return logoUrl;
+	}
+
+	public void setLogoUrl(String logoUrl) {
+		this.logoUrl = logoUrl;
+	}
 
 	public Long getId() {
 		return id;

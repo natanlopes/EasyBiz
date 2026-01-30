@@ -125,7 +125,8 @@ public class MensagemService {
                 mensagem.getConteudo(),
                 mensagem.getEnviadoEm(),
                 mensagem.getLida(),
-                mensagem.getLidaEm()
+                mensagem.getLidaEm(),
+                mensagem.getRemetente().getFotoUrl()
         );
     }
 }

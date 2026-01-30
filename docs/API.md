@@ -74,6 +74,22 @@ Cria um novo usuário (cliente ou potencial prestador).
 
 ✔️ **Sem autenticação**
 
+** PATCH /usuarios/me/foto **
+
+Atualiza a foto de perfil do usuário autenticado.
+
+Request:
+
+``` 
+
+{
+  "url": "https://cdn.meuservico.com/avatar.png"
+}
+```
+Response:
+204 No Content
+
+
 ---
 
 ## 🔹 3) Negócios (Prestadores)
@@ -101,6 +117,25 @@ Cria um negócio vinculado ao usuário autenticado.
   "descricao": "Cortes e barbas"
 }
 ```
+
+** PATCH /negocios/{id}/logo ** 
+
+Atualiza a logo do negócio.
+
+
+Regras:
+- Apenas o dono do negócio pode atualizar
+
+Request:
+
+```
+{
+  "url": "https://cdn.meuservico.com/logo.png"
+}
+
+```
+Response:
+204 No Content
 
 ---
 

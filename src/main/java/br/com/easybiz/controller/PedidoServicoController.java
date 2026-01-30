@@ -1,69 +1,60 @@
 package br.com.easybiz.controller;
 
 import br.com.easybiz.dto.CriarPedidoServicoDTO;
-import br.com.easybiz.model.PedidoServico;
+import br.com.easybiz.dto.PedidoServicoResponseDTO;
 import br.com.easybiz.service.PedidoServicoService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-
-import java.util.List;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-@Tag(name = "Pedidos de Serviço", description = "Pedidos iniciados por clientes")
+
+import java.security.Principal;
+import java.util.List;
+
+@Tag(name = "Pedidos de Serviço")
 @RestController
 @RequestMapping("/pedidos")
-@RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth") // Exige Token no Swagger
 public class PedidoServicoController {
 
-    private final PedidoServicoService pedidoServicoService;
-    
-	public PedidoServicoController(PedidoServicoService pedidoServicoService) {
-		this.pedidoServicoService = pedidoServicoService;
-	}
+    private final PedidoServicoService service;
 
-	@Operation(summary = "Criar pedido de serviço", description = """
-			Cliente inicia uma conversa com um negócio para negociar um serviço.
+    public PedidoServicoController(PedidoServicoService service) {
+        this.service = service;
+    }
 
-			Regras:
-			- Cliente deve existir
-			- Negócio deve existir
-			- Pedido inicia com status ABERTO
-			""")
-	@PostMapping("/cliente/{clienteId}")
-		public ResponseEntity<PedidoServico> criarPedido(@PathVariable Long clienteId,
-				@RequestBody CriarPedidoServicoDTO dto) {
-			return ResponseEntity.ok(pedidoServicoService.criarPedido(clienteId, dto));
-		}
-    @Operation(summary = "Aceitar Pedido", description = "Prestador aceita o serviço (Muda status para ACEITO)")
+    @PostMapping
+    public ResponseEntity<PedidoServicoResponseDTO> criar(
+            @RequestBody CriarPedidoServicoDTO dto,
+            Principal principal
+    ) {
+        Long clienteId = Long.valueOf(principal.getName());
+        return ResponseEntity.ok(service.criar(clienteId, dto));
+    }
+
+    @GetMapping
+    @Operation(summary = "Meus Pedidos", description = "Lista pedidos onde sou cliente ou prestador")
+    public ResponseEntity<List<PedidoServicoResponseDTO>> listarMeusPedidos(Principal principal) {
+        Long usuarioId = Long.valueOf(principal.getName());
+        return ResponseEntity.ok(service.listarMeusPedidos(usuarioId));
+    }
+
     @PatchMapping("/{id}/aceitar")
-    public ResponseEntity<PedidoServico> aceitarPedido(@PathVariable Long id) {
-        return ResponseEntity.ok(pedidoServicoService.aceitarPedido(id));
+    public ResponseEntity<Void> aceitar(@PathVariable Long id, Principal principal) {
+        service.aceitar(id, Long.valueOf(principal.getName()));
+        return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Recusar Pedido", description = "Prestador recusa o serviço (Muda status para RECUSADO)")
     @PatchMapping("/{id}/recusar")
-    public ResponseEntity<PedidoServico> recusarPedido(@PathVariable Long id) {
-        return ResponseEntity.ok(pedidoServicoService.recusarPedido(id));
+    public ResponseEntity<Void> recusar(@PathVariable Long id, Principal principal) {
+        service.recusar(id, Long.valueOf(principal.getName()));
+        return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Concluir Serviço", description = "Finaliza o trabalho (Muda status para CONCLUIDO)")
     @PatchMapping("/{id}/concluir")
-    public ResponseEntity<PedidoServico> concluirPedido(@PathVariable Long id) {
-        return ResponseEntity.ok(pedidoServicoService.concluirPedido(id));
-    }
-    
-    @Operation(summary = "Listar pedidos do Cliente", description = "Histórico de compras do usuário")
-    @GetMapping("/cliente/{clienteId}") // <--- A URL que você perguntou!
-    public ResponseEntity<List<PedidoServico>> listarPorCliente(@PathVariable Long clienteId) {
-        return ResponseEntity.ok(pedidoServicoService.listarPorCliente(clienteId));
-    }
-
-    @Operation(summary = "Listar pedidos do Prestador", description = "Agenda de serviços do dono do negócio")
-    @GetMapping("/prestador/{prestadorId}")
-    public ResponseEntity<List<PedidoServico>> listarPorPrestador(@PathVariable Long prestadorId) {
-        return ResponseEntity.ok(pedidoServicoService.listarPorPrestador(prestadorId));
+    public ResponseEntity<Void> concluir(@PathVariable Long id, Principal principal) {
+        service.concluir(id, Long.valueOf(principal.getName()));
+        return ResponseEntity.noContent().build();
     }
 }
-
