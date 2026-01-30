@@ -32,14 +32,12 @@ O sistema **ignora** qualquer ID de usuário enviado no corpo do JSON (Payload) 
 - Um usuário só pode ler mensagens de um pedido se for o **Cliente** ou o **Dono do Negócio** daquele pedido.
 - Tentativas de acesso a pedidos alheios resultam em `403 Forbidden` ou `SecurityException`.
 
-## 5. Busca de Profissional
-- Endpoint GET /negocios/busca é público
-- Nenhuma informação sensível é exposta
-- Endpoints de criação exigem autenticação JWT
+---
+## 🆕 Proteções Implementadas
 
-### Gestão de Imagens
-- URLs de imagem são tratadas como dados comuns
-- O backend nunca aceita upload binário
-- Atualizações de imagem exigem autenticação JWT
-- O ID do usuário é sempre obtido via token
-
+- Uso obrigatório de JWT para ações sensíveis
+- Validação de identidade via `Principal`
+- Proteção contra IDOR em:
+  - Listagem de pedidos
+  - Ações de aceitar/recusar/concluir
+- DTOs de resposta evitam vazamento de dados sensíveis

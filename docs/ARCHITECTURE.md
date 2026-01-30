@@ -39,3 +39,11 @@ reduzindo carga no backend e garantindo performance.
 
 A nota média do negócio é recalculada a cada nova avaliação e persistida na entidade Negocio para otimizar buscas e rankings.
 
+## 🆕 Global Exception Handling
+
+Foi adicionada uma camada de `@RestControllerAdvice` para interceptar exceções e garantir que o backend nunca retorne stack traces para o cliente.
+
+Benefícios:
+- Melhor UX no App
+- Backend previsível
+- Mensagens amigáveis para o Flutter

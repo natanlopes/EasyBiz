@@ -34,3 +34,11 @@ Após a conclusão de um pedido, o cliente pode avaliar o serviço prestado.
 - Ordena por avaliação →
 - Retorna lista otimizada para UX
 
+## 🆕 Fluxo Final V1 (Backend → App)
+
+1. Usuário faz login
+2. App recebe JWT
+3. App chama GET /usuarios/me
+4. App carrega avatar, nome e permissões
+5. Pedidos seguem ciclo:
+   ABERTO → ACEITO → CONCLUIDO → AVALIAÇÃO
