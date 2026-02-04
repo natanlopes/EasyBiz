@@ -3,9 +3,10 @@ package br.com.easybiz.controller;
 import br.com.easybiz.model.Usuario;
 import br.com.easybiz.repository.UsuarioRepository;
 import br.com.easybiz.security.JwtService;
-import io.swagger.v3.oas.annotations.Operation; 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,10 +21,16 @@ public class AuthController {
 
     private final UsuarioRepository usuarioRepository;
     private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
 
-    public AuthController(UsuarioRepository usuarioRepository, JwtService jwtService) {
+    public AuthController(
+        UsuarioRepository usuarioRepository, 
+        JwtService jwtService,
+        PasswordEncoder passwordEncoder
+    ) {
         this.usuarioRepository = usuarioRepository;
         this.jwtService = jwtService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Operation(summary = "Realizar Login", description = "Recebe email/senha e retorna o Token JWT")
@@ -31,11 +38,11 @@ public class AuthController {
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         // 1. Busca usuário
         Usuario usuario = usuarioRepository.findByEmail(request.email())
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+            .orElseThrow(() -> new RuntimeException("Credenciais inválidas"));
 
-        // 2. Valida senha
-        if (!usuario.getSenha().equals(request.senha())) {
-            return ResponseEntity.badRequest().body("Senha inválida");
+        // 2. Valida senha com BCrypt
+        if (!passwordEncoder.matches(request.senha(), usuario.getSenha())) {
+            throw new RuntimeException("Credenciais inválidas");
         }
 
         // 3. Gera Token com ID
