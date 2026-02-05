@@ -1,7 +1,8 @@
 package br.com.easybiz.dto;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Objeto de confirmação quando uma mensagem é visualizada")
 public record MensagemLidaDTO(

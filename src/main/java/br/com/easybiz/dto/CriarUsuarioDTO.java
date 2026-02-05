@@ -6,15 +6,15 @@ import jakarta.validation.constraints.NotBlank;
 
 public record CriarUsuarioDTO(
 		@Schema(description = "Nome completo do proprietário", example = "Carlos Silva")
-        @NotBlank 
+        @NotBlank
         String nomeCompleto,
 
         @Schema(description = "E-mail para login", example = "carlos@easybiz.com")
-        @NotBlank @Email 
+        @NotBlank @Email
         String email,
 
         @Schema(description = "Senha de acesso", example = "123456")
-        @NotBlank 
+        @NotBlank
         String senha
 ) {
 
@@ -29,5 +29,5 @@ public record CriarUsuarioDTO(
 	public String senha() {
 		return senha;
 	}
-	
+
 }

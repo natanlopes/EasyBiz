@@ -1,6 +1,7 @@
 package br.com.easybiz.config; // Ajuste o pacote se necessário
 
-import br.com.easybiz.security.JwtService;
+import java.util.Collections;
+
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -10,7 +11,7 @@ import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
+import br.com.easybiz.security.JwtService;
 
 @Component
 public class JwtChannelInterceptor implements ChannelInterceptor {
@@ -36,7 +37,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
                 // 1. Usa o método correto que existe no seu JwtService
                 if (jwtService.tokenValido(token)) {
-                    
+
                     // 2. Extrai apenas o ID (Long)
                     Long usuarioId = jwtService.extractUserId(token);
 
@@ -44,8 +45,8 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                     // Passamos lista vazia de authorities pois não estamos carregando roles do banco aqui
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
-                                    usuarioId, 
-                                    null, 
+                                    usuarioId,
+                                    null,
                                     Collections.emptyList()
                             );
 

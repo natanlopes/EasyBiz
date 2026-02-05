@@ -1,13 +1,17 @@
 package br.com.easybiz.service;
 
+import org.springframework.stereotype.Service;
+
 import br.com.easybiz.dto.AvaliacaoDTO;
-import br.com.easybiz.model.*;
+import br.com.easybiz.model.Avaliacao;
+import br.com.easybiz.model.Negocio;
+import br.com.easybiz.model.PedidoServico;
+import br.com.easybiz.model.StatusPedido;
+import br.com.easybiz.model.Usuario;
 import br.com.easybiz.repository.AvaliacaoRepository;
 import br.com.easybiz.repository.NegocioRepository;
 import br.com.easybiz.repository.PedidoServicoRepository;
 import jakarta.transaction.Transactional;
-
-import org.springframework.stereotype.Service;
 
 @Service
 public class AvaliacaoService {
@@ -59,10 +63,10 @@ public class AvaliacaoService {
         avaliacao.setComentario(dto.comentario());
 
         avaliacao = avaliacaoRepository.save(avaliacao);
-        
+
         Negocio negocio = pedido.getNegocio();
         Double novaMedia = avaliacaoRepository.calcularMediaDoNegocio(negocio.getId());
-        
+
         negocio.setNotaMedia(novaMedia); // Atualiza o campo cached
         negocioRepository.save(negocio); // Grava no banco
 

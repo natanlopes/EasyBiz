@@ -1,11 +1,23 @@
 package br.com.easybiz.model;
 
-import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "mensagem")
@@ -19,7 +31,7 @@ public class Mensagem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "pedido_servico_id", nullable = false)
@@ -34,7 +46,7 @@ public class Mensagem {
 
     @Column(name = "enviado_em", nullable = false)
     private LocalDateTime enviadoEm;
-  
+
     @Column(nullable = false)
     private Boolean lida = false;
 
@@ -99,5 +111,5 @@ public class Mensagem {
 	public void setEnviadoEm(LocalDateTime enviadoEm) {
 		this.enviadoEm = enviadoEm;
 	}
-    
+
 }

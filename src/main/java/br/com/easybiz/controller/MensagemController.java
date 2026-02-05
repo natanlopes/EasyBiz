@@ -1,5 +1,15 @@
 package br.com.easybiz.controller;
 
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import br.com.easybiz.dto.EnviarMensagemDTO;
 import br.com.easybiz.dto.MensagemResponseDTO;
 import br.com.easybiz.service.MensagemService;
@@ -8,10 +18,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "5. Chat do Pedido", description = "Envio e leitura de mensagens entre cliente e prestador")
 @RestController
@@ -47,6 +53,6 @@ public class MensagemController {
 		mensagemService.marcarComoLidas(pedidoId, usuarioId);
 		return ResponseEntity.noContent().build();
 	}
-    
-    
+
+
 }

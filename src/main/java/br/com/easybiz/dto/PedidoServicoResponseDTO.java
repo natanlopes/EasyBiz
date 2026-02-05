@@ -1,8 +1,9 @@
 package br.com.easybiz.dto;
 
+import java.time.LocalDateTime;
+
 import br.com.easybiz.model.StatusPedido;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.LocalDateTime;
 
 @Schema(description = "Dados de retorno de um pedido de serviço (Sem expor senhas)")
 public record PedidoServicoResponseDTO(

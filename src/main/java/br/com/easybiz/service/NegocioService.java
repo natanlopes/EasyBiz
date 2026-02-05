@@ -1,13 +1,14 @@
 package br.com.easybiz.service;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
 import br.com.easybiz.model.Negocio;
 import br.com.easybiz.model.Usuario;
 import br.com.easybiz.repository.NegocioRepository;
 import br.com.easybiz.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import java.util.Arrays;
-import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class NegocioService {
@@ -40,7 +41,7 @@ public class NegocioService {
             "FAXINA", "JARDINAGEM", "FRETE", "TECNICO",
             "MOTORISTA", "ENTREGADOR"
         );
-    
+
     public List<Negocio> buscarNegocios(Double lat, Double lon, String termoBusca) {
         Double raioKm = 30.0;
         String categoriaCorrigida = corrigirCategoria(termoBusca);
@@ -58,7 +59,9 @@ public class NegocioService {
      * Ex: "perdeiro" -> "PEDREIRO"
      */
     private String corrigirCategoria(String termo) {
-        if (termo == null || termo.isBlank()) return null;
+        if (termo == null || termo.isBlank()) {
+			return null;
+		}
 
         String normalizado = termo.toUpperCase().trim();
 
@@ -68,9 +71,9 @@ public class NegocioService {
                 return categoria;
             }
         }
-        
+
         // 2. Se não achou, retorna o termo original! (Para buscar "Adestrador", "Psicólogo", etc)
-        return termo; 
+        return termo;
     }
 
     public void atualizarLogo(Long negocioId, Long usuarioLogadoId, String novaUrl) {
@@ -85,6 +88,6 @@ public class NegocioService {
         negocio.setLogoUrl(novaUrl);
         negocioRepository.save(negocio);
     }
-    
+
 }
 

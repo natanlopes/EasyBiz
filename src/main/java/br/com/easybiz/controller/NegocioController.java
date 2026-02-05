@@ -1,5 +1,18 @@
 package br.com.easybiz.controller;
 
+import java.security.Principal;
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import br.com.easybiz.dto.AtualizarFotoDTO;
 import br.com.easybiz.dto.CriarNegocioDTO;
 import br.com.easybiz.model.Negocio;
@@ -10,12 +23,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
-import java.security.Principal;
-import java.util.List;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 @Tag(name = "Negócios", description = "Gerenciamento de negócios cadastrados na plataforma")
 @RestController
 @RequestMapping("/negocios")
@@ -24,7 +31,7 @@ import org.springframework.web.bind.annotation.*;
 public class NegocioController {
 
     private final NegocioService negocioService;
-    
+
     public NegocioController(NegocioService negocioService) {
         this.negocioService = negocioService;
     }
@@ -32,7 +39,7 @@ public class NegocioController {
             summary = "Criar um novo negócio",
             description = """
                 Cria um negócio vinculado a um usuário existente.
-                
+
                 Regras:
                 - O usuário deve existir
                 - O negócio inicia como ativo
@@ -43,7 +50,7 @@ public class NegocioController {
         @ApiResponse(responseCode = "200", description = "Negócio criado com sucesso"),
         @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
     })
-    
+
     @PostMapping
     public ResponseEntity<Negocio> criar(@RequestBody @Valid CriarNegocioDTO dto) {
         Negocio negocio = negocioService.criarNegocio(
@@ -73,7 +80,7 @@ public class NegocioController {
             Principal principal // Quem está logado
     ) {
         Long usuarioLogadoId = Long.valueOf(principal.getName());
-        
+
         // Passa para o service validar a propriedade
         negocioService.atualizarLogo(id, usuarioLogadoId, dto.url());
 

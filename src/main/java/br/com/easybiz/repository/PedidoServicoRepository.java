@@ -1,10 +1,10 @@
 package br.com.easybiz.repository;
 
-import br.com.easybiz.model.PedidoServico;
-
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import br.com.easybiz.model.PedidoServico;
 
 public interface PedidoServicoRepository extends JpaRepository<PedidoServico, Long> {
 	// Para o Cliente ver o histórico dele

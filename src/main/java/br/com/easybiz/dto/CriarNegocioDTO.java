@@ -10,9 +10,9 @@ public record CriarNegocioDTO(
         @Schema(example = "EasyBiz Barbearia", description = "Nome do negócio")
         @NotBlank String nome,
         @Schema(example = "BARBEARIA", description = "Categoria do serviço (Ex: Pedreiro, Manicure, Python Dev)")
-        @NotBlank 
+        @NotBlank
         String categoria
-        
+
 ) {
 
 	public Long usuarioId() {

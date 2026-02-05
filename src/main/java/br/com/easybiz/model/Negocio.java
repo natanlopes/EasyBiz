@@ -1,9 +1,21 @@
 package br.com.easybiz.model;
 
-import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "negocios")
@@ -54,12 +66,16 @@ public class Negocio {
     @PrePersist
     public void prePersist() {
         this.criadoEm = LocalDateTime.now();
-        if (this.ativo == null) this.ativo = true;
-        if (this.notaMedia == null) this.notaMedia = 0.0;
+        if (this.ativo == null) {
+			this.ativo = true;
+		}
+        if (this.notaMedia == null) {
+			this.notaMedia = 0.0;
+		}
     }
     @Column(length = 500)
     private String logoUrl;
-    
+
 	public String getLogoUrl() {
 		return logoUrl;
 	}
@@ -147,5 +163,5 @@ public class Negocio {
 	public void setNotaMedia(Double notaMedia) {
 		this.notaMedia = notaMedia;
 	}
-    
+
 }

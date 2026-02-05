@@ -31,6 +31,6 @@ public record MensagemResponseDTO(
         @Schema(description = "URL da foto do remetente", example = "https://...")
         String remetenteFotoUrl
 ) {
-	
-	
+
+
 }

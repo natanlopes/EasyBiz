@@ -1,9 +1,10 @@
 package br.com.easybiz.repository;
 
-import br.com.easybiz.model.Cliente;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
+import br.com.easybiz.model.Cliente;
 
 public interface ClienteRepository extends JpaRepository<Cliente, Long> {
 

@@ -1,18 +1,19 @@
 package br.com.easybiz.repository;
 
-import br.com.easybiz.model.Negocio;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
+import br.com.easybiz.model.Negocio;
 
 public interface NegocioRepository extends JpaRepository<Negocio, Long> {
 
     @Query(value = """
         SELECT *
         FROM negocios n
-        WHERE 
+        WHERE
             (:categoria IS NULL OR UPPER(n.categoria) LIKE UPPER(CONCAT('%', :categoria, '%')))
         AND
             (6371 * acos(

@@ -92,11 +92,7 @@ public class MensagemService {
             throw new RuntimeException("Mensagem não pertence ao pedido");
         }
 
-        if (mensagem.getRemetente().getId().equals(quemLeuId)) {
-            return;
-        }
-
-        if (Boolean.TRUE.equals(mensagem.getLida())) {
+        if (mensagem.getRemetente().getId().equals(quemLeuId) || Boolean.TRUE.equals(mensagem.getLida())) {
             return;
         }
 

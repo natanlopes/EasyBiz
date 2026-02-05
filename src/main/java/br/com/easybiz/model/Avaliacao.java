@@ -1,8 +1,14 @@
 package br.com.easybiz.model;
 
-import jakarta.persistence.*;
-import lombok.Data;
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import lombok.Data;
 
 @Entity
 @Data
@@ -84,5 +90,5 @@ public class Avaliacao {
 	public void setDataAvaliacao(LocalDateTime dataAvaliacao) {
 		this.dataAvaliacao = dataAvaliacao;
 	}
-    
+
 }

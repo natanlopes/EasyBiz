@@ -1,17 +1,18 @@
 package br.com.easybiz.controller;
 
-import br.com.easybiz.dto.DigitandoDTO;
-import br.com.easybiz.dto.EnviarMensagemDTO;
-import br.com.easybiz.dto.MensagemLidaDTO;
-import br.com.easybiz.dto.MensagemResponseDTO;
-import br.com.easybiz.service.MensagemService;
+import java.security.Principal;
+import java.time.LocalDateTime;
+
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
-import java.security.Principal;
-import java.time.LocalDateTime;
+import br.com.easybiz.dto.DigitandoDTO;
+import br.com.easybiz.dto.EnviarMensagemDTO;
+import br.com.easybiz.dto.MensagemLidaDTO;
+import br.com.easybiz.dto.MensagemResponseDTO;
+import br.com.easybiz.service.MensagemService;
 
 @Controller
 public class ChatController {
@@ -97,7 +98,7 @@ public class ChatController {
 
         // 3. Atualiza status de "Visto por último"
         var ultimoVisto = mensagemService.buscarUltimoVisto(pedidoId, quemLeuId);
-        
+
         messagingTemplate.convertAndSend(
                 "/topic/mensagens/" + pedidoId + "/ultimo-visto",
                 ultimoVisto

@@ -1,7 +1,7 @@
 package br.com.easybiz.security;
 
-import br.com.easybiz.model.PedidoServico;
-import br.com.easybiz.repository.PedidoServicoRepository;
+import java.util.Collections;
+
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -11,7 +11,8 @@ import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
+import br.com.easybiz.model.PedidoServico;
+import br.com.easybiz.repository.PedidoServicoRepository;
 
 @Component
 public class WebSocketJwtInterceptor implements ChannelInterceptor {
@@ -28,7 +29,9 @@ public class WebSocketJwtInterceptor implements ChannelInterceptor {
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        if (accessor == null) return message;
+        if (accessor == null) {
+			return message;
+		}
 
         // =================================================================
         // 🔍 FASE 1: CONEXÃO (CONNECT)
@@ -77,8 +80,8 @@ public class WebSocketJwtInterceptor implements ChannelInterceptor {
                 try {
                     // Pega o ID do pedido da URL
                     String[] parts = destination.split("/");
-                    Long pedidoId = Long.valueOf(parts[3]); 
-                    
+                    Long pedidoId = Long.valueOf(parts[3]);
+
                     // Verifica quem está tentando entrar
                     if (accessor.getUser() == null) {
                         System.out.println("❌ [WS] Erro: Usuário sem sessão (Auth falhou antes).");
@@ -103,7 +106,7 @@ public class WebSocketJwtInterceptor implements ChannelInterceptor {
                         System.out.println("⛔ [WS] ACESSO NEGADO! O usuário " + usuarioId + " não faz parte deste pedido.");
                         throw new RuntimeException("Acesso negado ao chat");
                     }
-                    
+
                     System.out.println("✅ [WS] Acesso PERMITIDO para User " + usuarioId);
 
                 } catch (Exception e) {

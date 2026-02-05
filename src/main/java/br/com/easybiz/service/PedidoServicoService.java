@@ -1,16 +1,20 @@
 package br.com.easybiz.service;
 
-import br.com.easybiz.dto.CriarPedidoServicoDTO;
-import br.com.easybiz.dto.PedidoServicoResponseDTO; // Importe o DTO
-import br.com.easybiz.model.*;
-import br.com.easybiz.repository.NegocioRepository;
-import br.com.easybiz.repository.PedidoServicoRepository;
-import br.com.easybiz.repository.UsuarioRepository;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import br.com.easybiz.dto.CriarPedidoServicoDTO;
+import br.com.easybiz.dto.PedidoServicoResponseDTO; // Importe o DTO
+import br.com.easybiz.model.Negocio;
+import br.com.easybiz.model.PedidoServico;
+import br.com.easybiz.model.StatusPedido;
+import br.com.easybiz.model.Usuario;
+import br.com.easybiz.repository.NegocioRepository;
+import br.com.easybiz.repository.PedidoServicoRepository;
+import br.com.easybiz.repository.UsuarioRepository;
 
 @Service
 public class PedidoServicoService {
