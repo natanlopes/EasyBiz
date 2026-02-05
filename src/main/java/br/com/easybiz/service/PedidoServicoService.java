@@ -91,6 +91,24 @@ public class PedidoServicoService {
         pedido.setStatus(StatusPedido.CONCLUIDO);
         pedidoRepository.save(pedido);
     }
+    //
+    @Transactional
+    public void cancelar(Long pedidoId, Long clienteId) {
+        PedidoServico pedido = buscarPedido(pedidoId);
+        
+        // Só o cliente pode cancelar
+        if (!pedido.getCliente().getId().equals(clienteId)) {
+            throw new RuntimeException("Apenas o cliente pode cancelar.");
+        }
+        
+        // Não pode cancelar se já foi concluído
+        if (pedido.getStatus() == StatusPedido.CONCLUIDO) {
+            throw new IllegalStateException("Não é possível cancelar serviço já concluído.");
+        }
+        
+        pedido.setStatus(StatusPedido.CANCELADO);
+        pedidoRepository.save(pedido);
+    }
 
     // LISTAR MEUS PEDIDOS (Inteligente: serve para Cliente e Prestador)
     public List<PedidoServicoResponseDTO> listarMeusPedidos(Long usuarioId) {

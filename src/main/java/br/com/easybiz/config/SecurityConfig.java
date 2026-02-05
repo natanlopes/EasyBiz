@@ -49,7 +49,9 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()
 
                 // Rotas temporárias
-                .requestMatchers("/negocios/**", "/clientes/**", "/pedidos/**").permitAll()// ⚠️ TEMPORÁRIO
+                .requestMatchers(HttpMethod.GET, "/negocios/**").permitAll() // Busca pública
+                .requestMatchers("/negocios/**").authenticated() // Criar/editar requer auth
+                .requestMatchers("/pedidos/**").authenticated() // Tudo requer auth
 
                 // 🔒 O resto exige estar logado
                 .anyRequest().authenticated()
