@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import io.jsonwebtoken.Claims;
@@ -14,21 +15,28 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class JwtService {
 
-    // ⚠️ Precisa ter PELO MENOS 32 caracteres para HS256
-    private static final String SECRET =
-            "easybiz-secret-key-para-hmac-sha-256-seguro";
+    private final Key key;
+    private final long expiration;
 
-    private static final long EXPIRATION = 1000 * 60 * 60 * 24; // 24h
-
-    private final Key key = Keys.hmacShaKeyFor(
-            SECRET.getBytes(StandardCharsets.UTF_8)
-    );
+    public JwtService(
+        @Value("${api.security.token.secret}") String secret,
+        @Value("${api.security.token.expiration}") long expiration
+    ) {
+        // Valida se o secret tem tamanho mínimo para HS256 (32 bytes)
+        if (secret == null || secret.length() < 32) {
+            throw new IllegalStateException(
+                "JWT_SECRET deve ter pelo menos 32 caracteres. Configure a variável de ambiente."
+            );
+        }
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.expiration = expiration;
+    }
 
     public String gerarToken(Long usuarioId) {
         return Jwts.builder()
                 .setSubject(String.valueOf(usuarioId))
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
