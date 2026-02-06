@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "Negócios", description = "Gerenciamento de negócios cadastrados na plataforma")
 @RestController
 @RequestMapping("/negocios")
-@RequiredArgsConstructor
+
 
 public class NegocioController {
 
