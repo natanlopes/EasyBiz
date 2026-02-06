@@ -64,4 +64,9 @@ public class PedidoServicoController {
         service.concluir(id, Long.valueOf(principal.getName()));
         return ResponseEntity.noContent().build();
     }
+    @PatchMapping("/{id}/cancelar")
+    public ResponseEntity<Void> cancelar(@PathVariable Long id, Principal principal) {
+        service.cancelar(id, Long.valueOf(principal.getName()));
+        return ResponseEntity.noContent().build();
+    }
 }
