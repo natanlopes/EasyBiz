@@ -1,5 +1,6 @@
 package br.com.easybiz.controller;
 
+import br.com.easybiz.dto.LoginRequestDTO;
 import br.com.easybiz.dto.LoginResponseDTO;
 import br.com.easybiz.model.Usuario;
 import br.com.easybiz.repository.UsuarioRepository;
@@ -52,7 +53,7 @@ public class AuthController {
     	)
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
 
         Usuario usuario = usuarioRepository.findByEmail(request.email())
             .orElseThrow(() -> new RuntimeException("Credenciais inválidas"));
@@ -68,4 +69,4 @@ public class AuthController {
 
 }
 // DTO interno
-record LoginRequest(String email, String senha) {}
+//record LoginRequest(String email, String senha) {}
