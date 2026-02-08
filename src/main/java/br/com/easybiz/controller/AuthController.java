@@ -36,25 +36,25 @@ public class AuthController {
         this.passwordEncoder = passwordEncoder;
     }
 
-    @Operation(
-    	    summary = "LOGIN V2 - TESTE",
-    	    description = "Recebe email/senha e retorna o Token JWT",
-    	    responses = {
-    	        @ApiResponse(
-    	            responseCode = "200",
-    	            description = "Login realizado com sucesso",
-    	            content = @Content(
-    	                mediaType = "application/json",
-    	                schema = @Schema(implementation = LoginResponseDTO.class)
-    	            )
-    	        ),
-    	        @ApiResponse(responseCode = "400", description = "Credenciais inválidas")
-    	    }
-    	)
-
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
-
+    @Operation(
+        summary = "Realizar Login",
+        description = "Recebe email/senha e retorna o Token JWT",
+        responses = {
+            @ApiResponse(
+                responseCode = "200",
+                description = "Login realizado com sucesso",
+                content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = LoginResponseDTO.class)
+                )
+            ),
+            @ApiResponse(responseCode = "400", description = "Credenciais inválidas")
+        }
+    )
+    public ResponseEntity<LoginResponseDTO> login(
+            @RequestBody LoginRequestDTO request
+    ) {
         Usuario usuario = usuarioRepository.findByEmail(request.email())
             .orElseThrow(() -> new RuntimeException("Credenciais inválidas"));
 
@@ -66,6 +66,7 @@ public class AuthController {
 
         return ResponseEntity.ok(new LoginResponseDTO(token));
     }
+
 
 }
 // DTO interno
