@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 @RestController
 @RequestMapping("/auth")
@@ -33,7 +35,22 @@ public class AuthController {
         this.passwordEncoder = passwordEncoder;
     }
 
-    @Operation(summary = "Realizar Login", description = "Recebe email/senha e retorna o Token JWT")
+    @Operation(
+    	    summary = "Realizar Login",
+    	    description = "Recebe email/senha e retorna o Token JWT",
+    	    responses = {
+    	        @ApiResponse(
+    	            responseCode = "200",
+    	            description = "Login realizado com sucesso",
+    	            content = @Content(
+    	                mediaType = "application/json",
+    	                schema = @Schema(implementation = LoginResponseDTO.class)
+    	            )
+    	        ),
+    	        @ApiResponse(responseCode = "400", description = "Credenciais inválidas")
+    	    }
+    	)
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequest request) {
 
