@@ -36,7 +36,7 @@ public class AuthController {
     }
 
     @Operation(
-    	    summary = "Realizar Login",
+    	    summary = "LOGIN V2 - TESTE",
     	    description = "Recebe email/senha e retorna o Token JWT",
     	    responses = {
     	        @ApiResponse(
