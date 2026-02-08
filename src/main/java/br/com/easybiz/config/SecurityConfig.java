@@ -62,7 +62,7 @@ public class SecurityConfig {
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
                 // 🟢 LIBERA O ACTUATOR (Essencial para o Railway não matar o app)
-                .requestMatchers("/actuator/**").permitAll()  // Permite acesso ao Actuator para monitoramento
+//                .requestMatchers("/actuator/**").permitAll()  // Permite acesso ao Actuator para monitoramento
 
                 // Cadastro de usuários
                 .requestMatchers(HttpMethod.POST, "/usuarios/**").permitAll()
