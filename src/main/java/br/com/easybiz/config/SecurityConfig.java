@@ -61,19 +61,24 @@ public class SecurityConfig {
                 // Swagger e Docs
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
+                // 🟢 LIBERA O ACTUATOR (Essencial para o Railway não matar o app)
+                .requestMatchers("/actuator/**").permitAll()  // Permite acesso ao Actuator para monitoramento
+
                 // Cadastro de usuários
                 .requestMatchers(HttpMethod.POST, "/usuarios/**").permitAll()
 
-                // 🔴 CORREÇÃO AQUI: Agora liberamos o endereço certo!
+                // WebSocket
                 .requestMatchers("/ws-chat/**").permitAll()
 
                 // Erros do Spring
                 .requestMatchers("/error").permitAll()
 
-                // Rotas temporárias
-                .requestMatchers(HttpMethod.GET, "/negocios/**").permitAll() // Busca pública
-                .requestMatchers("/negocios/**").authenticated() // Criar/editar requer auth
-                .requestMatchers("/pedidos/**").authenticated() // Tudo requer auth
+                // Rotas temporárias e públicas
+                .requestMatchers(HttpMethod.GET, "/negocios/**").permitAll() 
+                
+                // 🔒 Rotas protegidas
+                .requestMatchers("/negocios/**").authenticated() 
+                .requestMatchers("/pedidos/**").authenticated() 
 
                 // 🔒 O resto exige estar logado
                 .anyRequest().authenticated()
