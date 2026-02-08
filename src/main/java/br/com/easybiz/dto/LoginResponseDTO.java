@@ -2,7 +2,7 @@ package br.com.easybiz.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Resposta de autenticação")
+@Schema(name = "LoginResponseDTO", description = "Resposta de autenticação")
 public class LoginResponseDTO {
 
     @Schema(description = "Token JWT para autenticação do user", example = "eyJhbGciOiJIUzI1NiJ9...")
