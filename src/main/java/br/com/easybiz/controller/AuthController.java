@@ -1,5 +1,6 @@
 package br.com.easybiz.controller;
 
+import br.com.easybiz.dto.LoginResponseDTO;
 import br.com.easybiz.model.Usuario;
 import br.com.easybiz.repository.UsuarioRepository;
 import br.com.easybiz.security.JwtService;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -35,22 +35,20 @@ public class AuthController {
 
     @Operation(summary = "Realizar Login", description = "Recebe email/senha e retorna o Token JWT")
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        // 1. Busca usuário
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequest request) {
+
         Usuario usuario = usuarioRepository.findByEmail(request.email())
             .orElseThrow(() -> new RuntimeException("Credenciais inválidas"));
 
-        // 2. Valida senha com BCrypt
         if (!passwordEncoder.matches(request.senha(), usuario.getSenha())) {
             throw new RuntimeException("Credenciais inválidas");
         }
 
-        // 3. Gera Token com ID
         String token = jwtService.gerarToken(usuario.getId());
 
-        return ResponseEntity.ok(Map.of("token", token));
+        return ResponseEntity.ok(new LoginResponseDTO(token));
     }
-}
 
+}
 // DTO interno
 record LoginRequest(String email, String senha) {}
