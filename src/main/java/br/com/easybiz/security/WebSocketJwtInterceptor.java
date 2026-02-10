@@ -12,17 +12,25 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.stereotype.Component;
 
 import br.com.easybiz.model.PedidoServico;
+import br.com.easybiz.model.Usuario;
 import br.com.easybiz.repository.PedidoServicoRepository;
+import br.com.easybiz.repository.UsuarioRepository;
 
 @Component
 public class WebSocketJwtInterceptor implements ChannelInterceptor {
 
     private final JwtService jwtService;
     private final PedidoServicoRepository pedidoServicoRepository;
+    private final UsuarioRepository usuarioRepository; // <--- NOVO: Precisamos disso para achar o ID pelo Email
 
-    public WebSocketJwtInterceptor(JwtService jwtService, PedidoServicoRepository pedidoServicoRepository) {
+    public WebSocketJwtInterceptor(
+            JwtService jwtService,
+            PedidoServicoRepository pedidoServicoRepository,
+            UsuarioRepository usuarioRepository
+    ) {
         this.jwtService = jwtService;
         this.pedidoServicoRepository = pedidoServicoRepository;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Override
@@ -30,8 +38,8 @@ public class WebSocketJwtInterceptor implements ChannelInterceptor {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
         if (accessor == null) {
-			return message;
-		}
+            return message;
+        }
 
         // =================================================================
         // 🔍 FASE 1: CONEXÃO (CONNECT)
@@ -44,24 +52,24 @@ public class WebSocketJwtInterceptor implements ChannelInterceptor {
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = authHeader.substring(7);
 
-                // LOG DE DEBUG
-                boolean isTokenValido = jwtService.tokenValido(token);
-                System.out.println("❓ [WS] Token é válido? " + isTokenValido);
+                // Valida o Token
+                if (jwtService.tokenValido(token)) {
 
-                if (isTokenValido) {
-                    Long usuarioId = jwtService.extractUserId(token);
-                    System.out.println("✅ [WS] Usuário ID extraído do Token: " + usuarioId);
+                    // CORREÇÃO 1: Extrai o EMAIL (String), não o ID
+                    String emailUsuario = jwtService.extractUsername(token);
+                    System.out.println("✅ [WS] Usuário (Email) extraído do Token: " + emailUsuario);
 
+                    // Cria autenticação com o Email no Principal
                     UsernamePasswordAuthenticationToken auth =
                             new UsernamePasswordAuthenticationToken(
-                                    usuarioId.toString(),
+                                    emailUsuario,
                                     null,
                                     Collections.emptyList()
                             );
                     accessor.setUser(auth);
                 } else {
                     System.out.println("❌ [WS] Token inválido ou expirado! Bloqueando.");
-                    return null; // Retorna null para cancelar a conexão
+                    return null;
                 }
             } else {
                 System.out.println("❌ [WS] Header Authorization não encontrado ou sem Bearer.");
@@ -84,30 +92,35 @@ public class WebSocketJwtInterceptor implements ChannelInterceptor {
 
                     // Verifica quem está tentando entrar
                     if (accessor.getUser() == null) {
-                        System.out.println("❌ [WS] Erro: Usuário sem sessão (Auth falhou antes).");
                         throw new RuntimeException("Usuário não autenticado");
                     }
 
-                    Long usuarioId = Long.valueOf(accessor.getUser().getName());
+                    // CORREÇÃO 2: O Principal agora é o Email (String)
+                    String emailUsuario = accessor.getUser().getName();
+
+                    // Busca o ID real no banco para comparar permissão
+                    Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+                            .orElseThrow(() -> new RuntimeException("Usuário não encontrado no banco"));
+
+                    Long usuarioId = usuario.getId();
+
                     System.out.println("🔎 [WS] Verificando permissão -> User ID: " + usuarioId + " no Pedido ID: " + pedidoId);
 
                     PedidoServico pedido = pedidoServicoRepository.findById(pedidoId)
                             .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
 
-                    // LOGS DOS ENVOLVIDOS
                     Long idCliente = pedido.getCliente().getId();
                     Long idProfissional = pedido.getNegocio().getUsuario().getId();
-                    System.out.println("ℹ️ [WS] Dados do Pedido -> ClienteID: " + idCliente + " | ProfissionalID: " + idProfissional);
 
                     boolean isCliente = idCliente.equals(usuarioId);
                     boolean isProfissional = idProfissional.equals(usuarioId);
 
                     if (!isCliente && !isProfissional) {
-                        System.out.println("⛔ [WS] ACESSO NEGADO! O usuário " + usuarioId + " não faz parte deste pedido.");
-                        throw new RuntimeException("Acesso negado ao chat");
+                        System.out.println("⛔ [WS] ACESSO NEGADO! O usuário " + emailUsuario + " não faz parte deste pedido.");
+                        return null; // Bloqueia silenciosamente ou lança erro
                     }
 
-                    System.out.println("✅ [WS] Acesso PERMITIDO para User " + usuarioId);
+                    System.out.println("✅ [WS] Acesso PERMITIDO para User " + emailUsuario);
 
                 } catch (Exception e) {
                     System.out.println("❌ [WS] Erro na validação do SUBSCRIBE: " + e.getMessage());

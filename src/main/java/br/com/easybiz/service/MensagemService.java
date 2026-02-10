@@ -2,9 +2,8 @@ package br.com.easybiz.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
+import java.security.Principal;
 import org.springframework.stereotype.Service;
-
 import br.com.easybiz.dto.MensagemResponseDTO;
 import br.com.easybiz.model.Mensagem;
 import br.com.easybiz.model.PedidoServico;
@@ -31,17 +30,17 @@ public class MensagemService {
         this.usuarioRepository = usuarioRepository;
     }
 
-    // 🔹 ENVIO DE MENSAGEM (ID vem do JWT)
+    // 🔹 ENVIO DE MENSAGEM CORRIGIDO (Recebe Email String)
     public MensagemResponseDTO enviarMensagem(
             Long pedidoId,
-            Long remetenteId,
+            String emailRemetente, // <--- Aqui é STRING agora
             String conteudo
     ) {
-
         PedidoServico pedido = pedidoServicoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
 
-        Usuario remetente = usuarioRepository.findById(remetenteId)
+        // CORREÇÃO AQUI: Usar findByEmail em vez de findById
+        Usuario remetente = usuarioRepository.findByEmail(emailRemetente)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
         Mensagem mensagem = new Mensagem();

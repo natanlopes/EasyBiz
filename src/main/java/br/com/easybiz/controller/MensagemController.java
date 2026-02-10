@@ -1,7 +1,7 @@
 package br.com.easybiz.controller;
 
 import java.util.List;
-
+import java.security.Principal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,8 +35,8 @@ public class MensagemController {
 			@ApiResponse(responseCode = "404", description = "Pedido ou usuário não encontrado") })
 	@PostMapping
 	public ResponseEntity<MensagemResponseDTO> enviar(@PathVariable Long pedidoId,
-			@RequestBody @Valid EnviarMensagemDTO dto) {
-		return ResponseEntity.ok(mensagemService.enviarMensagem(pedidoId, dto.usuarioId(), dto.conteudo()));
+			@RequestBody @Valid EnviarMensagemDTO dto,Principal principal) {
+		return ResponseEntity.ok(mensagemService.enviarMensagem(pedidoId, principal.getName(), dto.conteudo()));
 	}
 
 	@Operation(summary = "Histórico de conversa", description = "Lista todas as mensagens do pedido em ordem cronológica.")

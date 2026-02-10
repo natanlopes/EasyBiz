@@ -32,23 +32,23 @@ public class JwtService {
         this.expiration = expiration;
     }
 
-    public String gerarToken(Long usuarioId) {
+    public String gerarToken(String email) {
         return Jwts.builder()
-                .setSubject(String.valueOf(usuarioId))
+                .setSubject(email)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public Long extractUserId(String token) {
+    public String extractUsername(String token) {
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
 
-        return Long.parseLong(claims.getSubject());
+        return claims.getSubject();
     }
 
     public boolean tokenValido(String token) {

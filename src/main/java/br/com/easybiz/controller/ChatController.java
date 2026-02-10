@@ -36,16 +36,16 @@ public class ChatController {
             EnviarMensagemDTO dto,
             Principal principal
     ) {
-        //  Segurança: O ID do remetente é extraído do Token JWT (Principal)
-        Long remetenteId = Long.valueOf(principal.getName());
+        // CORREÇÃO: Pegamos o EMAIL direto, sem converter para Long
+        String emailRemetente = principal.getName();
 
+        // Passamos o email para o serviço (que agora aceita String)
         MensagemResponseDTO mensagem = mensagemService.enviarMensagem(
                 pedidoId,
-                remetenteId,
+                emailRemetente,
                 dto.conteudo()
         );
 
-        //  Envia para quem assina: /topic/mensagens/{pedidoId}
         messagingTemplate.convertAndSend(
                 "/topic/mensagens/" + pedidoId,
                 mensagem

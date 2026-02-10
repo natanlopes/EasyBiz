@@ -2,7 +2,7 @@ package br.com.easybiz.security;
 
 import java.io.IOException;
 import java.util.Collections;
-
+import java.util.List;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -35,11 +35,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = header.substring(7);
 
             if (jwtService.tokenValido(token)) {
-                Long usuarioId = jwtService.extractUserId(token);
+                String emailUsuario = jwtService.extractUsername(token);
 
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(
-                                usuarioId,
+                                emailUsuario,
                                 null,
                                 Collections.emptyList()
                         );

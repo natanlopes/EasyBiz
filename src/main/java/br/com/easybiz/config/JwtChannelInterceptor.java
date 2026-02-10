@@ -38,14 +38,13 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                 // 1. Usa o método correto que existe no seu JwtService
                 if (jwtService.tokenValido(token)) {
 
-                    // 2. Extrai apenas o ID (Long)
-                    Long usuarioId = jwtService.extractUserId(token);
+                   // 2. Extrai o Email do token (String)
+                    String emailUsuario = jwtService.extractUsername(token);
 
-                    // 3. Cria a autenticação usando o ID como Principal
-                    // Passamos lista vazia de authorities pois não estamos carregando roles do banco aqui
+                   // 3. Cria a autenticação usando o Email como Principal
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
-                                    usuarioId,
+                                    emailUsuario,
                                     null,
                                     Collections.emptyList()
                             );

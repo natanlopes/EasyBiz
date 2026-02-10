@@ -5,9 +5,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record EnviarMensagemDTO(
-        @Schema(description = "ID do usuário que está enviando (Cliente ou Dono)", example = "1")
-        @NotNull
-        Long usuarioId,
+        // REMOVIDO: usuarioId (Segurança: agora pegamos do Token)
+//        @Schema(description = "ID do usuário que está enviando (Cliente ou Dono)", example = "1")
+//        @NotNull
+//        Long usuarioId,
 
         @Schema(description = "Texto da mensagem", example = "Olá, qual o valor do orçamento?")
         @NotBlank
