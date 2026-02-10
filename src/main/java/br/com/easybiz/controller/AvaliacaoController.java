@@ -1,7 +1,8 @@
 package br.com.easybiz.controller;
 
 import java.security.Principal;
-
+import br.com.easybiz.model.Usuario;
+import br.com.easybiz.repository.UsuarioRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,9 +44,11 @@ import jakarta.validation.Valid;
 public class AvaliacaoController {
 
     private final AvaliacaoService avaliacaoService;
+    private final UsuarioRepository usuarioRepository; // 🔹 Dependência nova necessária
 
-    public AvaliacaoController(AvaliacaoService avaliacaoService) {
+    public AvaliacaoController(AvaliacaoService avaliacaoService, UsuarioRepository usuarioRepository) {
         this.avaliacaoService = avaliacaoService;
+        this.usuarioRepository = usuarioRepository;
     }
 
     /**
@@ -188,10 +191,19 @@ public class AvaliacaoController {
             
             Principal principal
     ) {
-        Long usuarioLogadoId = Long.valueOf(principal.getName());
+        Long usuarioLogadoId = recuperarIdUsuario(principal);
         
         AvaliacaoResponseDTO response = avaliacaoService.avaliarPedido(pedidoId, usuarioLogadoId, dto);
         
         return ResponseEntity.ok(response);
+    }
+    // =======================================================
+    // 🛠️ MÉTODO AUXILIAR (Igual ao do PedidoController)
+    // =======================================================
+    private Long recuperarIdUsuario(Principal principal) {
+        String email = principal.getName();
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário do token não encontrado no banco de dados."));
+        return usuario.getId();
     }
 }

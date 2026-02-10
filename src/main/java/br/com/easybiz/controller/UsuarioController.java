@@ -64,12 +64,11 @@ public class UsuarioController {
     // ==========================================
     @Operation(summary = "Meus Dados", description = "Retorna dados do usuário logado baseados no Token.")
     @GetMapping("/me")
-    public ResponseEntity<UsuarioResponseDTO> meusDados() {
-        // Pega o ID de dentro do Token JWT
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Long meuId = Long.valueOf(auth.getName());
+    public ResponseEntity<UsuarioResponseDTO> meusDados(Principal principal) {
+        // ✅ CORREÇÃO: Busca pelo Email (String) que vem no Token
+        String email = principal.getName();
 
-        return usuarioRepository.findById(meuId)
+        return usuarioRepository.findByEmail(email)
                 .map(u -> ResponseEntity.ok(new UsuarioResponseDTO(
                         u.getId(),
                         u.getNomeCompleto(),
@@ -104,9 +103,9 @@ public class UsuarioController {
             @RequestBody @Valid AtualizarFotoDTO dto,
             Principal principal
     ) {
-        Long usuarioLogadoId = Long.valueOf(principal.getName());
-
-        Usuario usuario = usuarioRepository.findById(usuarioLogadoId)
+        // ✅ CORREÇÃO: Recupera usuário pelo Email
+        String email = principal.getName();
+        Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
         usuario.setFotoUrl(dto.url());

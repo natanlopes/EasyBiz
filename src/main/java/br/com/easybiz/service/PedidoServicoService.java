@@ -31,14 +31,14 @@ public class PedidoServicoService {
 
     // CRIAR
     @Transactional
-    public PedidoServicoResponseDTO criar(Long clienteId, CriarPedidoServicoDTO dto) {
-        Usuario cliente = usuarioRepository.findById(clienteId)
+    public PedidoServicoResponseDTO criar(String emailCliente, CriarPedidoServicoDTO dto) {
+        Usuario cliente = usuarioRepository.findByEmail(emailCliente)
                 .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
 
         Negocio negocio = negocioRepository.findById(dto.negocioId())
                 .orElseThrow(() -> new RuntimeException("Negócio não encontrado"));
 
-        if (negocio.getUsuario().getId().equals(clienteId)) {
+        if (negocio.getUsuario().getId().equals(cliente.getId())) {
              throw new RuntimeException("Você não pode contratar seu próprio serviço.");
         }
 

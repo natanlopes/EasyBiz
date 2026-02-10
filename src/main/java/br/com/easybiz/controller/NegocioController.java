@@ -16,10 +16,13 @@ import org.springframework.web.bind.annotation.RestController;
 import br.com.easybiz.dto.AtualizarFotoDTO;
 import br.com.easybiz.dto.CriarNegocioDTO;
 import br.com.easybiz.model.Negocio;
+import br.com.easybiz.model.Usuario;
+import br.com.easybiz.repository.UsuarioRepository; // Importante
 import br.com.easybiz.service.NegocioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,9 +34,11 @@ import lombok.RequiredArgsConstructor;
 public class NegocioController {
 
     private final NegocioService negocioService;
+    private final UsuarioRepository usuarioRepository; // 🔹 Injeção Necessária
 
-    public NegocioController(NegocioService negocioService) {
+    public NegocioController(NegocioService negocioService, UsuarioRepository usuarioRepository) {
         this.negocioService = negocioService;
+        this.usuarioRepository = usuarioRepository;
     }
     @Operation(
             summary = "Criar um novo negócio",
@@ -52,9 +57,16 @@ public class NegocioController {
     })
 
     @PostMapping
-    public ResponseEntity<Negocio> criar(@RequestBody @Valid CriarNegocioDTO dto) {
+    public ResponseEntity<Negocio> criar(
+            @RequestBody @Valid CriarNegocioDTO dto,
+            Principal principal
+    ) {
+        // ✅ MELHORIA DE SEGURANÇA:
+        // Ignoramos o dto.usuarioId() e usamos o ID do usuário LOGADO (Dono do Token)
+        Long usuarioId = recuperarIdUsuario(principal);
+
         Negocio negocio = negocioService.criarNegocio(
-                dto.usuarioId(),
+                usuarioId,
                 dto.nome(),
                 dto.categoria()
         );
@@ -75,16 +87,25 @@ public class NegocioController {
     @PatchMapping("/{id}/logo")
     @Operation(summary = "Atualizar Logo do Negócio", description = "Requer que o usuário logado seja o dono.")
     public ResponseEntity<Void> atualizarLogo(
-            @PathVariable Long id, // ID do Negócio
+            @PathVariable Long id,
             @RequestBody @Valid AtualizarFotoDTO dto,
-            Principal principal // Quem está logado
+            Principal principal
     ) {
-        Long usuarioLogadoId = Long.valueOf(principal.getName());
+        // ✅ CORREÇÃO: Converte Email -> ID antes de chamar o serviço
+        Long usuarioLogadoId = recuperarIdUsuario(principal);
 
-        // Passa para o service validar a propriedade
         negocioService.atualizarLogo(id, usuarioLogadoId, dto.url());
 
         return ResponseEntity.noContent().build();
+    }
+    // =======================================================
+    // 🛠️ MÉTODO AUXILIAR
+    // =======================================================
+    private Long recuperarIdUsuario(Principal principal) {
+        String email = principal.getName();
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário do token não encontrado no banco."));
+        return usuario.getId();
     }
 }
 
