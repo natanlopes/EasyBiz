@@ -16,29 +16,31 @@ import org.springframework.web.bind.annotation.RestController;
 import br.com.easybiz.dto.AtualizarFotoDTO;
 import br.com.easybiz.dto.CriarNegocioDTO;
 import br.com.easybiz.model.Negocio;
+import br.com.easybiz.service.AuthContextService;
 import br.com.easybiz.service.NegocioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+
 @Tag(name = "Negócios", description = "Gerenciamento de negócios cadastrados na plataforma")
 @RestController
 @RequestMapping("/negocios")
-
-
 public class NegocioController {
 
     private final NegocioService negocioService;
+    private final AuthContextService authContextService;
 
-    public NegocioController(NegocioService negocioService) {
+    public NegocioController(NegocioService negocioService, AuthContextService authContextService) {
         this.negocioService = negocioService;
+        this.authContextService = authContextService;
     }
+
     @Operation(
             summary = "Criar um novo negócio",
             description = """
-                Cria um negócio vinculado a um usuário existente.
+                Cria um negócio vinculado ao usuário autenticado.
 
                 Regras:
                 - O usuário deve existir
@@ -50,11 +52,11 @@ public class NegocioController {
         @ApiResponse(responseCode = "200", description = "Negócio criado com sucesso"),
         @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
     })
-
     @PostMapping
-    public ResponseEntity<Negocio> criar(@RequestBody @Valid CriarNegocioDTO dto) {
+    public ResponseEntity<Negocio> criar(@RequestBody @Valid CriarNegocioDTO dto, Principal principal) {
+        Long usuarioLogadoId = authContextService.getUsuarioIdByEmail(principal.getName());
         Negocio negocio = negocioService.criarNegocio(
-                dto.usuarioId(),
+                usuarioLogadoId,
                 dto.nome(),
                 dto.categoria()
         );
@@ -72,19 +74,16 @@ public class NegocioController {
             negocioService.buscarNegocios(lat, lon, busca)
         );
     }
+
     @PatchMapping("/{id}/logo")
     @Operation(summary = "Atualizar Logo do Negócio", description = "Requer que o usuário logado seja o dono.")
     public ResponseEntity<Void> atualizarLogo(
-            @PathVariable Long id, // ID do Negócio
+            @PathVariable Long id,
             @RequestBody @Valid AtualizarFotoDTO dto,
-            Principal principal // Quem está logado
+            Principal principal
     ) {
-        Long usuarioLogadoId = Long.valueOf(principal.getName());
-
-        // Passa para o service validar a propriedade
+        Long usuarioLogadoId = authContextService.getUsuarioIdByEmail(principal.getName());
         negocioService.atualizarLogo(id, usuarioLogadoId, dto.url());
-
         return ResponseEntity.noContent().build();
     }
 }
-

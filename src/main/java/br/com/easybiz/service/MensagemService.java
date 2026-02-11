@@ -2,8 +2,9 @@ package br.com.easybiz.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.security.Principal;
+
 import org.springframework.stereotype.Service;
+
 import br.com.easybiz.dto.MensagemResponseDTO;
 import br.com.easybiz.model.Mensagem;
 import br.com.easybiz.model.PedidoServico;
@@ -30,18 +31,10 @@ public class MensagemService {
         this.usuarioRepository = usuarioRepository;
     }
 
-    // 🔹 ENVIO DE MENSAGEM CORRIGIDO (Recebe Email String)
-    public MensagemResponseDTO enviarMensagem(
-            Long pedidoId,
-            String emailRemetente, // <--- Aqui é STRING agora
-            String conteudo
-    ) {
-        PedidoServico pedido = pedidoServicoRepository.findById(pedidoId)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
-
-        // CORREÇÃO AQUI: Usar findByEmail em vez de findById
-        Usuario remetente = usuarioRepository.findByEmail(emailRemetente)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    public MensagemResponseDTO enviarMensagem(Long pedidoId, String emailRemetente, String conteudo) {
+        PedidoServico pedido = buscarPedido(pedidoId);
+        Usuario remetente = buscarUsuarioPorEmail(emailRemetente);
+        validarParticipantePedido(pedido, remetente.getId());
 
         Mensagem mensagem = new Mensagem();
         mensagem.setPedidoServico(pedido);
@@ -55,8 +48,11 @@ public class MensagemService {
         return toResponseDTO(salva);
     }
 
-    // 🔹 LISTAR MENSAGENS DO CHAT
-    public List<MensagemResponseDTO> listarMensagens(Long pedidoId) {
+    public List<MensagemResponseDTO> listarMensagens(Long pedidoId, String emailSolicitante) {
+        PedidoServico pedido = buscarPedido(pedidoId);
+        Long usuarioId = buscarUsuarioPorEmail(emailSolicitante).getId();
+        validarParticipantePedido(pedido, usuarioId);
+
         return mensagemRepository
                 .findByPedidoServico_IdOrderByEnviadoEmAsc(pedidoId)
                 .stream()
@@ -64,12 +60,13 @@ public class MensagemService {
                 .toList();
     }
 
-    // 🔹 MARCAR TODAS COMO LIDAS
     @Transactional
-    public void marcarComoLidas(Long pedidoId, Long usuarioId) {
+    public void marcarComoLidas(Long pedidoId, String emailSolicitante) {
+        PedidoServico pedido = buscarPedido(pedidoId);
+        Long usuarioId = buscarUsuarioPorEmail(emailSolicitante).getId();
+        validarParticipantePedido(pedido, usuarioId);
 
-        List<Mensagem> mensagens = mensagemRepository
-                .findNaoLidasDoPedido(pedidoId, usuarioId);
+        List<Mensagem> mensagens = mensagemRepository.findNaoLidasDoPedido(pedidoId, usuarioId);
 
         for (Mensagem m : mensagens) {
             m.setLida(true);
@@ -77,13 +74,12 @@ public class MensagemService {
         }
     }
 
-    // 🔹 MARCAR MENSAGEM ESPECÍFICA
     @Transactional
-    public void marcarMensagemEspecifica(
-            Long pedidoId,
-            Long mensagemId,
-            Long quemLeuId
-    ) {
+    public void marcarMensagemEspecifica(Long pedidoId, Long mensagemId, String emailSolicitante) {
+        PedidoServico pedido = buscarPedido(pedidoId);
+        Long quemLeuId = buscarUsuarioPorEmail(emailSolicitante).getId();
+        validarParticipantePedido(pedido, quemLeuId);
+
         Mensagem mensagem = mensagemRepository.findById(mensagemId)
                 .orElseThrow(() -> new RuntimeException("Mensagem não encontrada"));
 
@@ -99,18 +95,36 @@ public class MensagemService {
         mensagem.setLidaEm(LocalDateTime.now());
     }
 
-    // 🔹 ÚLTIMO VISTO
-    public br.com.easybiz.dto.UltimoVistoDTO buscarUltimoVisto(
-            Long pedidoId,
-            Long usuarioId
-    ) {
-        LocalDateTime data = mensagemRepository
-                .buscarUltimaLeitura(pedidoId, usuarioId);
+    public br.com.easybiz.dto.UltimoVistoDTO buscarUltimoVisto(Long pedidoId, String emailSolicitante) {
+        PedidoServico pedido = buscarPedido(pedidoId);
+        Long usuarioId = buscarUsuarioPorEmail(emailSolicitante).getId();
+        validarParticipantePedido(pedido, usuarioId);
+
+        LocalDateTime data = mensagemRepository.buscarUltimaLeitura(pedidoId, usuarioId);
 
         return new br.com.easybiz.dto.UltimoVistoDTO(pedidoId, data);
     }
 
-    // 🔹 MAPPER
+    private PedidoServico buscarPedido(Long pedidoId) {
+        return pedidoServicoRepository.findById(pedidoId)
+                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+    }
+
+    private Usuario buscarUsuarioPorEmail(String email) {
+        return usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    }
+
+    private void validarParticipantePedido(PedidoServico pedido, Long usuarioId) {
+        Long idCliente = pedido.getCliente().getId();
+        Long idProfissional = pedido.getNegocio().getUsuario().getId();
+        boolean participante = idCliente.equals(usuarioId) || idProfissional.equals(usuarioId);
+
+        if (!participante) {
+            throw new SecurityException("Acesso negado: usuário não participa deste pedido.");
+        }
+    }
+
     private MensagemResponseDTO toResponseDTO(Mensagem mensagem) {
         return new MensagemResponseDTO(
                 mensagem.getId(),

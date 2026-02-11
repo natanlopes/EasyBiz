@@ -12,6 +12,7 @@ import br.com.easybiz.dto.DigitandoDTO;
 import br.com.easybiz.dto.EnviarMensagemDTO;
 import br.com.easybiz.dto.MensagemLidaDTO;
 import br.com.easybiz.dto.MensagemResponseDTO;
+import br.com.easybiz.service.AuthContextService;
 import br.com.easybiz.service.MensagemService;
 
 @Controller
@@ -19,27 +20,26 @@ public class ChatController {
 
     private final MensagemService mensagemService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final AuthContextService authContextService;
 
-    public ChatController(MensagemService mensagemService, SimpMessagingTemplate messagingTemplate) {
+    public ChatController(
+            MensagemService mensagemService,
+            SimpMessagingTemplate messagingTemplate,
+            AuthContextService authContextService
+    ) {
         this.mensagemService = mensagemService;
         this.messagingTemplate = messagingTemplate;
+        this.authContextService = authContextService;
     }
 
-    /**
-     *  1. Envio de Mensagem
-     * Rota STOMP: /app/chat/{pedidoId}
-     * Payload: EnviarMensagemDTO
-     */
     @MessageMapping("/chat/{pedidoId}")
     public void enviarMensagemEmTempoReal(
             @DestinationVariable Long pedidoId,
             EnviarMensagemDTO dto,
             Principal principal
     ) {
-        // CORREÇÃO: Pegamos o EMAIL direto, sem converter para Long
         String emailRemetente = principal.getName();
 
-        // Passamos o email para o serviço (que agora aceita String)
         MensagemResponseDTO mensagem = mensagemService.enviarMensagem(
                 pedidoId,
                 emailRemetente,
@@ -52,17 +52,13 @@ public class ChatController {
         );
     }
 
-    /**
-     * 2. Notificação de "Digitando..."
-     * Rota STOMP: /app/chat/{pedidoId}/digitando
-     */
     @MessageMapping("/chat/{pedidoId}/digitando")
     public void digitando(
             @DestinationVariable Long pedidoId,
             DigitandoDTO dto,
             Principal principal
     ) {
-        Long usuarioId = Long.valueOf(principal.getName());
+        Long usuarioId = authContextService.getUsuarioIdByEmail(principal.getName());
 
         messagingTemplate.convertAndSend(
                 "/topic/mensagens/" + pedidoId + "/digitando",
@@ -70,22 +66,17 @@ public class ChatController {
         );
     }
 
-    /**
-     *  3. Confirmação de Leitura
-     * Rota STOMP: /app/chat/{pedidoId}/lida/{mensagemId}
-     */
     @MessageMapping("/chat/{pedidoId}/lida/{mensagemId}")
     public void confirmarLeitura(
             @DestinationVariable Long pedidoId,
             @DestinationVariable Long mensagemId,
             Principal principal
     ) {
-        Long quemLeuId = Long.valueOf(principal.getName());
+        String emailUsuario = principal.getName();
+        Long quemLeuId = authContextService.getUsuarioIdByEmail(emailUsuario);
 
-        // 1. Persiste no banco que foi lido
-        mensagemService.marcarMensagemEspecifica(pedidoId, mensagemId, quemLeuId);
+        mensagemService.marcarMensagemEspecifica(pedidoId, mensagemId, emailUsuario);
 
-        // 2. Avisa em tempo real: /topic/mensagens/{pedidoId}/lida
         messagingTemplate.convertAndSend(
                 "/topic/mensagens/" + pedidoId + "/lida",
                 new MensagemLidaDTO(
@@ -96,8 +87,7 @@ public class ChatController {
                 )
         );
 
-        // 3. Atualiza status de "Visto por último"
-        var ultimoVisto = mensagemService.buscarUltimoVisto(pedidoId, quemLeuId);
+        var ultimoVisto = mensagemService.buscarUltimoVisto(pedidoId, emailUsuario);
 
         messagingTemplate.convertAndSend(
                 "/topic/mensagens/" + pedidoId + "/ultimo-visto",

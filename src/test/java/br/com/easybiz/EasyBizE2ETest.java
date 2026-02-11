@@ -190,11 +190,10 @@ public class EasyBizE2ETest {
     void deveCriarNegocio() throws Exception {
         String json = """
             {
-                "usuarioId": %d,
                 "nome": "Barbearia E2E Test",
                 "categoria": "BARBEIRO"
             }
-            """.formatted(prestadorId);
+            """;
 
         MvcResult result = mockMvc.perform(post("/negocios")
                 .contentType(MediaType.APPLICATION_JSON)

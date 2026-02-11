@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import br.com.easybiz.dto.AvaliacaoDTO;
 import br.com.easybiz.dto.AvaliacaoResponseDTO;
 import br.com.easybiz.service.AvaliacaoService;
+import br.com.easybiz.service.AuthContextService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -43,9 +44,11 @@ import jakarta.validation.Valid;
 public class AvaliacaoController {
 
     private final AvaliacaoService avaliacaoService;
+    private final AuthContextService authContextService;
 
-    public AvaliacaoController(AvaliacaoService avaliacaoService) {
+    public AvaliacaoController(AvaliacaoService avaliacaoService, AuthContextService authContextService) {
         this.avaliacaoService = avaliacaoService;
+        this.authContextService = authContextService;
     }
 
     /**
@@ -188,7 +191,7 @@ public class AvaliacaoController {
             
             Principal principal
     ) {
-        Long usuarioLogadoId = Long.valueOf(principal.getName());
+        Long usuarioLogadoId = authContextService.getUsuarioIdByEmail(principal.getName());
         
         AvaliacaoResponseDTO response = avaliacaoService.avaliarPedido(pedidoId, usuarioLogadoId, dto);
         
