@@ -1,7 +1,8 @@
 package br.com.easybiz.controller;
 
-import java.util.List;
 import java.security.Principal;
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,29 +31,33 @@ public class MensagemController {
 		this.mensagemService = mensagemService;
 	}
 
-	@Operation(summary = "Enviar mensagem", description = "Registra uma nova mensagem no chat do pedido.")
-	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Mensagem enviada com sucesso"),
-			@ApiResponse(responseCode = "404", description = "Pedido ou usuário não encontrado") })
+	@Operation(summary = "Enviar mensagem")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Mensagem enviada"),
+			@ApiResponse(responseCode = "404", description = "Pedido ou usuário não encontrado")
+	})
 	@PostMapping
-	public ResponseEntity<MensagemResponseDTO> enviar(@PathVariable Long pedidoId,
-			@RequestBody @Valid EnviarMensagemDTO dto,Principal principal) {
+	public ResponseEntity<MensagemResponseDTO> enviar(
+			@PathVariable Long pedidoId,
+			@RequestBody @Valid EnviarMensagemDTO dto,
+			Principal principal
+	) {
+		// Correção: Passa o Email (String) direto para o Service
 		return ResponseEntity.ok(mensagemService.enviarMensagem(pedidoId, principal.getName(), dto.conteudo()));
 	}
 
-	@Operation(summary = "Histórico de conversa", description = "Lista todas as mensagens do pedido em ordem cronológica.")
-	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Lista de mensagens retornada com sucesso"),
-			@ApiResponse(responseCode = "404", description = "Pedido não encontrado") })
+	@Operation(summary = "Histórico de conversa")
 	@GetMapping
-	public ResponseEntity<List<MensagemResponseDTO>> listar(@PathVariable Long pedidoId) {
-		return ResponseEntity.ok(mensagemService.listarMensagens(pedidoId));
+	public ResponseEntity<List<MensagemResponseDTO>> listar(@PathVariable Long pedidoId, Principal principal) {
+		// Correção: Passa o Email para validar participante
+		return ResponseEntity.ok(mensagemService.listarMensagens(pedidoId, principal.getName()));
 	}
 
 	@Operation(summary = "Marcar mensagens como lidas")
-	@PostMapping("/lidas/{usuarioId}")
-	public ResponseEntity<Void> marcarComoLidas(@PathVariable Long pedidoId, @PathVariable Long usuarioId) {
-		mensagemService.marcarComoLidas(pedidoId, usuarioId);
+	@PostMapping("/lidas")
+	public ResponseEntity<Void> marcarComoLidas(@PathVariable Long pedidoId, Principal principal) {
+		// Correção: Removemos {usuarioId} da URL e usamos o Token
+		mensagemService.marcarComoLidas(pedidoId, principal.getName());
 		return ResponseEntity.noContent().build();
 	}
-
-
 }

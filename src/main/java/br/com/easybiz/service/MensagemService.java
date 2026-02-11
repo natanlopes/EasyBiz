@@ -2,16 +2,18 @@ package br.com.easybiz.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.security.Principal;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import br.com.easybiz.dto.MensagemResponseDTO;
+import br.com.easybiz.dto.UltimoVistoDTO;
 import br.com.easybiz.model.Mensagem;
 import br.com.easybiz.model.PedidoServico;
 import br.com.easybiz.model.Usuario;
 import br.com.easybiz.repository.MensagemRepository;
 import br.com.easybiz.repository.PedidoServicoRepository;
 import br.com.easybiz.repository.UsuarioRepository;
-import jakarta.transaction.Transactional;
 
 @Service
 public class MensagemService {
@@ -30,18 +32,14 @@ public class MensagemService {
         this.usuarioRepository = usuarioRepository;
     }
 
-    // 🔹 ENVIO DE MENSAGEM CORRIGIDO (Recebe Email String)
-    public MensagemResponseDTO enviarMensagem(
-            Long pedidoId,
-            String emailRemetente, // <--- Aqui é STRING agora
-            String conteudo
-    ) {
-        PedidoServico pedido = pedidoServicoRepository.findById(pedidoId)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+    // 🔹 ENVIO DE MENSAGEM
+    @Transactional
+    public MensagemResponseDTO enviarMensagem(Long pedidoId, String emailRemetente, String conteudo) {
+        PedidoServico pedido = buscarPedido(pedidoId);
+        Usuario remetente = buscarUsuarioPorEmail(emailRemetente);
 
-        // CORREÇÃO AQUI: Usar findByEmail em vez de findById
-        Usuario remetente = usuarioRepository.findByEmail(emailRemetente)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        // Segurança: Valida se quem está enviando faz parte do pedido
+        validarParticipantePedido(pedido, remetente.getId());
 
         Mensagem mensagem = new Mensagem();
         mensagem.setPedidoServico(pedido);
@@ -55,8 +53,14 @@ public class MensagemService {
         return toResponseDTO(salva);
     }
 
-    // 🔹 LISTAR MENSAGENS DO CHAT
-    public List<MensagemResponseDTO> listarMensagens(Long pedidoId) {
+    // 🔹 LISTAR MENSAGENS (Histórico)
+    public List<MensagemResponseDTO> listarMensagens(Long pedidoId, String emailSolicitante) {
+        PedidoServico pedido = buscarPedido(pedidoId);
+        Long usuarioId = buscarUsuarioPorEmail(emailSolicitante).getId();
+
+        // Segurança: Só participantes podem ver o histórico
+        validarParticipantePedido(pedido, usuarioId);
+
         return mensagemRepository
                 .findByPedidoServico_IdOrderByEnviadoEmAsc(pedidoId)
                 .stream()
@@ -66,10 +70,13 @@ public class MensagemService {
 
     // 🔹 MARCAR TODAS COMO LIDAS
     @Transactional
-    public void marcarComoLidas(Long pedidoId, Long usuarioId) {
+    public void marcarComoLidas(Long pedidoId, String emailSolicitante) {
+        PedidoServico pedido = buscarPedido(pedidoId);
+        Long usuarioId = buscarUsuarioPorEmail(emailSolicitante).getId();
 
-        List<Mensagem> mensagens = mensagemRepository
-                .findNaoLidasDoPedido(pedidoId, usuarioId);
+        validarParticipantePedido(pedido, usuarioId);
+
+        List<Mensagem> mensagens = mensagemRepository.findNaoLidasDoPedido(pedidoId, usuarioId);
 
         for (Mensagem m : mensagens) {
             m.setLida(true);
@@ -77,13 +84,14 @@ public class MensagemService {
         }
     }
 
-    // 🔹 MARCAR MENSAGEM ESPECÍFICA
+    // 🔹 MARCAR MENSAGEM ESPECÍFICA (WebSocket)
     @Transactional
-    public void marcarMensagemEspecifica(
-            Long pedidoId,
-            Long mensagemId,
-            Long quemLeuId
-    ) {
+    public void marcarMensagemEspecifica(Long pedidoId, Long mensagemId, String emailSolicitante) {
+        PedidoServico pedido = buscarPedido(pedidoId);
+        Long quemLeuId = buscarUsuarioPorEmail(emailSolicitante).getId();
+
+        validarParticipantePedido(pedido, quemLeuId);
+
         Mensagem mensagem = mensagemRepository.findById(mensagemId)
                 .orElseThrow(() -> new RuntimeException("Mensagem não encontrada"));
 
@@ -91,6 +99,7 @@ public class MensagemService {
             throw new RuntimeException("Mensagem não pertence ao pedido");
         }
 
+        // Se eu mesmo mandei ou já está lida, ignora
         if (mensagem.getRemetente().getId().equals(quemLeuId) || Boolean.TRUE.equals(mensagem.getLida())) {
             return;
         }
@@ -100,17 +109,41 @@ public class MensagemService {
     }
 
     // 🔹 ÚLTIMO VISTO
-    public br.com.easybiz.dto.UltimoVistoDTO buscarUltimoVisto(
-            Long pedidoId,
-            Long usuarioId
-    ) {
-        LocalDateTime data = mensagemRepository
-                .buscarUltimaLeitura(pedidoId, usuarioId);
+    public UltimoVistoDTO buscarUltimoVisto(Long pedidoId, String emailSolicitante) {
+        PedidoServico pedido = buscarPedido(pedidoId);
+        Long usuarioId = buscarUsuarioPorEmail(emailSolicitante).getId();
 
-        return new br.com.easybiz.dto.UltimoVistoDTO(pedidoId, data);
+        validarParticipantePedido(pedido, usuarioId);
+
+        LocalDateTime data = mensagemRepository.buscarUltimaLeitura(pedidoId, usuarioId);
+
+        return new UltimoVistoDTO(pedidoId, data);
     }
 
-    // 🔹 MAPPER
+    // --- MÉTODOS AUXILIARES E SEGURANÇA ---
+
+    private PedidoServico buscarPedido(Long pedidoId) {
+        return pedidoServicoRepository.findById(pedidoId)
+                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+    }
+
+    private Usuario buscarUsuarioPorEmail(String email) {
+        return usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    }
+
+    // Valida se o usuário é Cliente ou Prestador do pedido. Se não for, bloqueia.
+    private void validarParticipantePedido(PedidoServico pedido, Long usuarioId) {
+        Long idCliente = pedido.getCliente().getId();
+        Long idProfissional = pedido.getNegocio().getUsuario().getId();
+
+        boolean participante = idCliente.equals(usuarioId) || idProfissional.equals(usuarioId);
+
+        if (!participante) {
+            throw new SecurityException("Acesso negado: usuário não participa deste pedido.");
+        }
+    }
+
     private MensagemResponseDTO toResponseDTO(Mensagem mensagem) {
         return new MensagemResponseDTO(
                 mensagem.getId(),

@@ -1,8 +1,7 @@
 package br.com.easybiz.controller;
 
 import java.security.Principal;
-import br.com.easybiz.model.Usuario;
-import br.com.easybiz.repository.UsuarioRepository;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.easybiz.dto.AvaliacaoDTO;
 import br.com.easybiz.dto.AvaliacaoResponseDTO;
+import br.com.easybiz.service.AuthContextService;
 import br.com.easybiz.service.AvaliacaoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,10 +26,8 @@ import jakarta.validation.Valid;
 
 /**
  * Controller REST para gerenciamento de Avaliações.
- * 
- * <p>Endpoints para criar e consultar avaliações de serviços prestados.</p>
- * 
- * @author EasyBiz Team
+ * * <p>Endpoints para criar e consultar avaliações de serviços prestados.</p>
+ * * @author EasyBiz Team
  * @since 1.0
  * @see AvaliacaoService
  * @see AvaliacaoResponseDTO
@@ -37,31 +35,30 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/avaliacoes")
 @Tag(
-    name = "Avaliações", 
-    description = "Gerenciamento de avaliações de serviços. Permite que clientes avaliem prestadores após a conclusão do serviço."
+        name = "Avaliações",
+        description = "Gerenciamento de avaliações de serviços. Permite que clientes avaliem prestadores após a conclusão do serviço."
 )
 @SecurityRequirement(name = "bearerAuth")
 public class AvaliacaoController {
 
     private final AvaliacaoService avaliacaoService;
-    private final UsuarioRepository usuarioRepository; // 🔹 Dependência nova necessária
+    private final AuthContextService authContextService; // ✅ Injeção do serviço de contexto
 
-    public AvaliacaoController(AvaliacaoService avaliacaoService, UsuarioRepository usuarioRepository) {
+    public AvaliacaoController(AvaliacaoService avaliacaoService, AuthContextService authContextService) {
         this.avaliacaoService = avaliacaoService;
-        this.usuarioRepository = usuarioRepository;
+        this.authContextService = authContextService;
     }
 
     /**
      * Cria uma avaliação para um pedido concluído.
-     * 
-     * @param pedidoId ID do pedido a ser avaliado
+     * * @param pedidoId ID do pedido a ser avaliado
      * @param dto Dados da avaliação
      * @param principal Usuário autenticado (extraído do JWT)
      * @return Dados da avaliação criada
      */
     @Operation(
-        summary = "Avaliar um pedido concluído",
-        description = """
+            summary = "Avaliar um pedido concluído",
+            description = """
             Permite que o **cliente** avalie um serviço após a conclusão.
             
             ## Regras de Negócio
@@ -79,15 +76,15 @@ public class AvaliacaoController {
             """
     )
     @ApiResponses({
-        @ApiResponse(
-            responseCode = "200", 
-            description = "✅ Avaliação criada com sucesso",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = AvaliacaoResponseDTO.class),
-                examples = @ExampleObject(
-                    name = "Avaliação 5 estrelas",
-                    value = """
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "✅ Avaliação criada com sucesso",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AvaliacaoResponseDTO.class),
+                            examples = @ExampleObject(
+                                    name = "Avaliação 5 estrelas",
+                                    value = """
                         {
                             "id": 1,
                             "nota": 5,
@@ -100,18 +97,18 @@ public class AvaliacaoController {
                             "negocioNome": "Barbearia do Carlos"
                         }
                         """
-                )
-            )
-        ),
-        @ApiResponse(
-            responseCode = "400", 
-            description = "❌ Erro de validação",
-            content = @Content(
-                mediaType = "application/json",
-                examples = {
-                    @ExampleObject(
-                        name = "Pedido não concluído",
-                        value = """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "❌ Erro de validação",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Pedido não concluído",
+                                            value = """
                             {
                                 "timestamp": "2026-02-05T12:00:00",
                                 "status": 400,
@@ -119,10 +116,10 @@ public class AvaliacaoController {
                                 "message": "Você só pode avaliar serviços CONCLUÍDOS."
                             }
                             """
-                    ),
-                    @ExampleObject(
-                        name = "Já avaliado",
-                        value = """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Já avaliado",
+                                            value = """
                             {
                                 "timestamp": "2026-02-05T12:00:00",
                                 "status": 400,
@@ -130,21 +127,21 @@ public class AvaliacaoController {
                                 "message": "Este serviço já foi avaliado."
                             }
                             """
+                                    )
+                            }
                     )
-                }
-            )
-        ),
-        @ApiResponse(
-            responseCode = "401", 
-            description = "❌ Token JWT inválido ou ausente"
-        ),
-        @ApiResponse(
-            responseCode = "403", 
-            description = "❌ Apenas o cliente pode avaliar",
-            content = @Content(
-                mediaType = "application/json",
-                examples = @ExampleObject(
-                    value = """
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "❌ Token JWT inválido ou ausente"
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "❌ Apenas o cliente pode avaliar",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = """
                         {
                             "timestamp": "2026-02-05T12:00:00",
                             "status": 403,
@@ -152,58 +149,50 @@ public class AvaliacaoController {
                             "message": "Apenas o cliente pode avaliar neste momento."
                         }
                         """
-                )
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "❌ Pedido não encontrado"
             )
-        ),
-        @ApiResponse(
-            responseCode = "404", 
-            description = "❌ Pedido não encontrado"
-        )
     })
     @PostMapping("/pedido/{pedidoId}")
     public ResponseEntity<AvaliacaoResponseDTO> avaliar(
-            
+
             @Parameter(
-                description = "ID do pedido a ser avaliado",
-                example = "3",
-                required = true
+                    description = "ID do pedido a ser avaliado",
+                    example = "3",
+                    required = true
             )
             @PathVariable Long pedidoId,
-            
+
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                description = "Dados da avaliação",
-                required = true,
-                content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = AvaliacaoDTO.class),
-                    examples = @ExampleObject(
-                        name = "Avaliação positiva",
-                        value = """
+                    description = "Dados da avaliação",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AvaliacaoDTO.class),
+                            examples = @ExampleObject(
+                                    name = "Avaliação positiva",
+                                    value = """
                             {
                                 "nota": 5,
                                 "comentario": "Excelente serviço! Muito profissional e pontual."
                             }
                             """
+                            )
                     )
-                )
             )
             @RequestBody @Valid AvaliacaoDTO dto,
-            
+
             Principal principal
     ) {
-        Long usuarioLogadoId = recuperarIdUsuario(principal);
-        
+        // ✅ SUBSTITUIÇÃO: Usa o serviço centralizado para pegar o ID seguro
+        Long usuarioLogadoId = authContextService.getUsuarioIdByEmail(principal.getName());
+
         AvaliacaoResponseDTO response = avaliacaoService.avaliarPedido(pedidoId, usuarioLogadoId, dto);
-        
+
         return ResponseEntity.ok(response);
-    }
-    // =======================================================
-    // 🛠️ MÉTODO AUXILIAR (Igual ao do PedidoController)
-    // =======================================================
-    private Long recuperarIdUsuario(Principal principal) {
-        String email = principal.getName();
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário do token não encontrado no banco de dados."));
-        return usuario.getId();
     }
 }
