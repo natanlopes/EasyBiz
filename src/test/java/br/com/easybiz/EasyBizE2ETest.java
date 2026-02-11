@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder; // IMPORT NOVO
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -32,9 +33,12 @@ public class EasyBizE2ETest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    // 🔹 INJEÇÃO NECESSÁRIA PARA CORRIGIR O ERRO 400
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    // 🔹 INJEÇÃO NECESSÁRIA PARA CRIPTOGRAFAR A SENHA NO SETUP
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     // Variáveis compartilhadas entre testes
     private static String tokenCliente;
@@ -50,33 +54,34 @@ public class EasyBizE2ETest {
     private static final String SENHA = "123456";
 
     // ==========================================
-    // 🛠️ SETUP DO BANCO (CORREÇÃO FUNDAMENTAL)
+    // 🛠️ SETUP DO BANCO
     // ==========================================
     @BeforeEach
     void setupBancoDeDados() {
-        // Garante que o CLIENTE existe no banco H2 antes de qualquer teste
+        // Garante que o CLIENTE existe
         if (usuarioRepository.findByEmail(EMAIL_CLIENTE).isEmpty()) {
             Usuario cliente = new Usuario();
             cliente.setNomeCompleto("Cliente E2E Test");
             cliente.setEmail(EMAIL_CLIENTE);
-            cliente.setSenha(SENHA); // Em ambiente real, usaria encoder, mas para teste E2E local ok
+            // CORREÇÃO AQUI: Criptografar a senha antes de salvar
+            cliente.setSenha(passwordEncoder.encode(SENHA));
             cliente.setFotoUrl("http://foto.com/cliente.jpg");
             Usuario salvo = usuarioRepository.save(cliente);
-            clienteId = salvo.getId(); // Atualiza o ID estático
+            clienteId = salvo.getId();
         } else {
-            // Se já existe, garante que temos o ID atualizado
             clienteId = usuarioRepository.findByEmail(EMAIL_CLIENTE).get().getId();
         }
 
-        // Garante que o PRESTADOR existe no banco H2
+        // Garante que o PRESTADOR existe
         if (usuarioRepository.findByEmail(EMAIL_PRESTADOR).isEmpty()) {
             Usuario prestador = new Usuario();
             prestador.setNomeCompleto("Prestador E2E Test");
             prestador.setEmail(EMAIL_PRESTADOR);
-            prestador.setSenha(SENHA);
+            // CORREÇÃO AQUI: Criptografar a senha antes de salvar
+            prestador.setSenha(passwordEncoder.encode(SENHA));
             prestador.setFotoUrl("http://foto.com/prestador.jpg");
             Usuario salvo = usuarioRepository.save(prestador);
-            prestadorId = salvo.getId(); // Atualiza o ID estático
+            prestadorId = salvo.getId();
         } else {
             prestadorId = usuarioRepository.findByEmail(EMAIL_PRESTADOR).get().getId();
         }
@@ -90,11 +95,6 @@ public class EasyBizE2ETest {
     @Order(1)
     @DisplayName("1.1 - Validar Cadastro Cliente (API)")
     void deveCadastrarCliente() throws Exception {
-        // Como o @BeforeEach já cria, aqui testamos se a API lida bem (ou ignoramos se já existe)
-        // Para o fluxo E2E, o mais importante é conseguir o token depois.
-        // Se quiser testar o cadastro "puro", teria que deletar o usuário antes.
-        // Mas para garantir o sucesso dos próximos passos, vamos focar no login.
-
         System.out.println("✅ Cliente garantido pelo Setup do Banco ID: " + clienteId);
         Assertions.assertNotNull(clienteId);
     }
