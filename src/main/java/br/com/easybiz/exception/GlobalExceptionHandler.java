@@ -20,23 +20,57 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    // 1. Erros de Regra de Negócio (ex: "Saldo insuficiente", "Pedido já aceito")
-    @ExceptionHandler({RuntimeException.class, IllegalStateException.class, IllegalArgumentException.class})
-    public ResponseEntity<ApiError> handleRegraDeNegocio(Exception ex) {
+    // 1. Recurso nao encontrado -> 404
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiError> handleNotFound(ResourceNotFoundException ex) {
+        ApiError error = new ApiError(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Recurso Nao Encontrado",
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    // 2. Credenciais invalidas -> 401
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiError> handleUnauthorized(UnauthorizedException ex) {
+        ApiError error = new ApiError(
+                LocalDateTime.now(),
+                HttpStatus.UNAUTHORIZED.value(),
+                "Nao Autenticado",
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    // 3. Acesso negado (IDOR, permissao) -> 403
+    @ExceptionHandler({ForbiddenException.class, SecurityException.class})
+    public ResponseEntity<ApiError> handleForbidden(RuntimeException ex) {
+        ApiError error = new ApiError(
+                LocalDateTime.now(),
+                HttpStatus.FORBIDDEN.value(),
+                "Acesso Negado",
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    // 4. Regra de negocio violada -> 400
+    @ExceptionHandler({BusinessException.class, IllegalStateException.class, IllegalArgumentException.class})
+    public ResponseEntity<ApiError> handleBusinessError(RuntimeException ex) {
         ApiError error = new ApiError(
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
-                "Erro de Regra de Negócio",
+                "Erro de Regra de Negocio",
                 ex.getMessage()
         );
         return ResponseEntity.badRequest().body(error);
     }
 
-    // 2. Erros de Validação do DTO (@Valid, @NotNull, @Email)
-    // Retorna lista de campos inválidos para o frontend saber o que corrigir
+    // 5. Validacao de DTO (@Valid) -> 400
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidationErrors(MethodArgumentNotValidException ex) {
-
         List<String> erros = ex.getBindingResult().getFieldErrors()
                 .stream()
                 .map(this::formatFieldError)
@@ -46,42 +80,40 @@ public class GlobalExceptionHandler {
         ApiError error = new ApiError(
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
-                "Dados Inválidos",
-                String.join(", ", erros) // Ex: "email: formato inválido, senha: obrigatória"
+                "Dados Invalidos",
+                String.join(", ", erros)
         );
         return ResponseEntity.badRequest().body(error);
     }
 
-    // 3. Erro de Autenticação (Token ausente, inválido ou expirado)
+    // 6. Spring Security AuthenticationException -> 401
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiError> handleAuthenticationError(AuthenticationException ex) {
         ApiError error = new ApiError(
                 LocalDateTime.now(),
                 HttpStatus.UNAUTHORIZED.value(),
-                "Não Autenticado",
-                "Falha na autenticação. Verifique seu token."
+                "Nao Autenticado",
+                "Falha na autenticacao. Verifique seu token."
         );
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
-    // 4. Erro de Autorização (Usuário logado tentando acessar recurso proibido)
-    // Ex: Cliente tentando aceitar pedido, ou Prestador tentando mudar logo de outro negócio
+    // 7. Spring Security AccessDeniedException -> 403
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex) {
         ApiError error = new ApiError(
                 LocalDateTime.now(),
                 HttpStatus.FORBIDDEN.value(),
                 "Acesso Negado",
-                "Você não tem permissão para realizar esta ação."
+                "Voce nao tem permissao para realizar esta acao."
         );
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
-    // 5. Erro Inesperado (Bug, Banco fora do ar, NullPointer)
+    // 8. Erro inesperado (fallback) -> 500
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneralException(Exception ex) {
-        // Loga o erro no console do servidor para o desenvolvedor ver (não mostra stacktrace pro usuário)
-        log.error("ERRO CRÍTICO NO SISTEMA:", ex);
+        log.error("Erro inesperado no sistema:", ex);
 
         ApiError error = new ApiError(
                 LocalDateTime.now(),
@@ -92,7 +124,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 
-    // Método auxiliar para formatar a mensagem de erro de validação
     private String formatFieldError(FieldError fieldError) {
         return fieldError.getField() + ": " + fieldError.getDefaultMessage();
     }

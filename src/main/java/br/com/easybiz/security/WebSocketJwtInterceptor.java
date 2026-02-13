@@ -13,14 +13,12 @@ import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Component;
 
-import br.com.easybiz.security.JwtService; // ✅ Ajustado para o serviço correto
-
 @Component
 public class WebSocketJwtInterceptor implements ChannelInterceptor {
 
     private static final Logger log = LoggerFactory.getLogger(WebSocketJwtInterceptor.class);
 
-    private final JwtService jwtService; // ✅ Injeção do JwtService
+    private final JwtService jwtService;
 
     public WebSocketJwtInterceptor(JwtService jwtService) {
         this.jwtService = jwtService;
@@ -31,32 +29,29 @@ public class WebSocketJwtInterceptor implements ChannelInterceptor {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-            log.debug("🔵 [WS] Nova tentativa de CONEXÃO recebida...");
+            log.debug("[WS] Nova tentativa de conexao recebida");
 
             String authHeader = accessor.getFirstNativeHeader("Authorization");
 
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = authHeader.substring(7);
 
-                // 1. Valida se o token é autêntico (Assinatura + Expiração)
                 if (jwtService.tokenValido(token)) {
-
-                    // 2. Extrai o email para criar a identidade
                     String email = jwtService.extractUsername(token);
 
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
 
                     accessor.setUser(authentication);
-                    log.info("✅ [WS] Conexão autenticada para: {}", email);
+                    log.info("[WS] Conexao autenticada para: {}", email);
 
                 } else {
-                    log.warn("❌ [WS] Token inválido ou expirado! Conexão recusada.");
-                    return null; // ⛔ ISSO É IMPORTANTE: Bloqueia a conexão!
+                    log.warn("[WS] Token invalido ou expirado. Conexao recusada.");
+                    return null;
                 }
             } else {
-                log.warn("⚠️ [WS] Cabeçalho Authorization ausente. Conexão recusada.");
-                return null; // ⛔ Bloqueia conexão sem token
+                log.warn("[WS] Cabecalho Authorization ausente. Conexao recusada.");
+                return null;
             }
         }
         return message;
