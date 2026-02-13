@@ -10,7 +10,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder; // IMPORT NOVO
-import org.springframework.test.context.ActiveProfiles;
+// ActiveProfiles removido - usa application.properties de src/test/resources automaticamente
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -22,7 +22,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class EasyBizE2ETest {
@@ -293,27 +292,28 @@ public class EasyBizE2ETest {
 
     @Test
     @Order(21)
-    @DisplayName("3.2 - Listar Pedidos (Cliente)")
+    @DisplayName("3.2 - Listar Pedidos (Cliente) - Paginado")
     void deveListarPedidosCliente() throws Exception {
         mockMvc.perform(get("/pedidos")
                         .header("Authorization", "Bearer " + tokenCliente))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(org.hamcrest.Matchers.greaterThan(0)));
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(org.hamcrest.Matchers.greaterThan(0)))
+                .andExpect(jsonPath("$.totalElements").exists());
 
-        System.out.println("✅ Cliente consegue listar seus pedidos");
+        System.out.println("✅ Cliente consegue listar seus pedidos (paginado)");
     }
 
     @Test
     @Order(22)
-    @DisplayName("3.3 - Listar Pedidos (Prestador)")
+    @DisplayName("3.3 - Listar Pedidos (Prestador) - Paginado")
     void deveListarPedidosPrestador() throws Exception {
         mockMvc.perform(get("/pedidos")
                         .header("Authorization", "Bearer " + tokenPrestador))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$.content").isArray());
 
-        System.out.println("✅ Prestador consegue listar seus pedidos");
+        System.out.println("✅ Prestador consegue listar seus pedidos (paginado)");
     }
 
     @Test
