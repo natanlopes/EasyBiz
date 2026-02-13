@@ -14,6 +14,8 @@ public interface NegocioRepository extends JpaRepository<Negocio, Long> {
         SELECT *
         FROM negocios n
         WHERE
+            n.latitude IS NOT NULL AND n.longitude IS NOT NULL
+        AND
             (:categoria IS NULL OR UPPER(n.categoria) LIKE UPPER(CONCAT('%', :categoria, '%')))
         AND
             (6371 * acos(

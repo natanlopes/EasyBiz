@@ -2,6 +2,7 @@ package br.com.easybiz.controller;
 
 import br.com.easybiz.dto.LoginRequestDTO;
 import br.com.easybiz.dto.LoginResponseDTO;
+import br.com.easybiz.exception.UnauthorizedException;
 import br.com.easybiz.model.Usuario;
 import br.com.easybiz.repository.UsuarioRepository;
 import br.com.easybiz.security.JwtService;
@@ -16,10 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/auth")
-@Tag(name = "Autenticação", description = "Login para pegar o Token JWT")
+@Tag(name = "Autenticacao", description = "Login para pegar o Token JWT")
 public class AuthController {
 
     private final UsuarioRepository usuarioRepository;
@@ -27,7 +29,7 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
 
     public AuthController(
-        UsuarioRepository usuarioRepository, 
+        UsuarioRepository usuarioRepository,
         JwtService jwtService,
         PasswordEncoder passwordEncoder
     ) {
@@ -49,25 +51,21 @@ public class AuthController {
                     schema = @Schema(implementation = LoginResponseDTO.class)
                 )
             ),
-            @ApiResponse(responseCode = "400", description = "Credenciais inválidas")
+            @ApiResponse(responseCode = "401", description = "Credenciais invalidas")
         }
     )
     public ResponseEntity<LoginResponseDTO> login(
-            @RequestBody LoginRequestDTO request
+            @RequestBody @Valid LoginRequestDTO request
     ) {
         Usuario usuario = usuarioRepository.findByEmail(request.email())
-            .orElseThrow(() -> new RuntimeException("Credenciais inválidas"));
+            .orElseThrow(() -> new UnauthorizedException("Credenciais invalidas"));
 
         if (!passwordEncoder.matches(request.senha(), usuario.getSenha())) {
-            throw new RuntimeException("Credenciais inválidas");
+            throw new UnauthorizedException("Credenciais invalidas");
         }
 
         String token = jwtService.gerarToken(usuario.getEmail());
 
         return ResponseEntity.ok(new LoginResponseDTO(token));
     }
-
-
 }
-// DTO interno
-//record LoginRequest(String email, String senha) {}

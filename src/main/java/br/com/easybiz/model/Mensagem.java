@@ -53,63 +53,11 @@ public class Mensagem {
     @Column(name = "lida_em")
     private LocalDateTime lidaEm;
 
-    public Boolean getLida() {
-		return lida;
-	}
-	public void setLida(Boolean lida) {
-		this.lida = lida;
-	}
-	public LocalDateTime getLidaEm() {
-		return lidaEm;
-	}
-	public void setLidaEm(LocalDateTime lidaEm) {
-		this.lidaEm = lidaEm;
-	}
-	@PrePersist
+    @PrePersist
     public void prePersist() {
         this.enviadoEm = LocalDateTime.now();
         if (this.lida == null) {
             this.lida = false;
         }
     }
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
-
-	public PedidoServico getPedidoServico() {
-		return pedidoServico;
-	}
-
-	public void setPedidoServico(PedidoServico pedidoServico) {
-		this.pedidoServico = pedidoServico;
-	}
-
-	public Usuario getRemetente() {
-		return remetente;
-	}
-
-	public void setRemetente(Usuario remetente) {
-		this.remetente = remetente;
-	}
-
-	public String getConteudo() {
-		return conteudo;
-	}
-
-	public void setConteudo(String conteudo) {
-		this.conteudo = conteudo;
-	}
-
-	public LocalDateTime getEnviadoEm() {
-		return enviadoEm;
-	}
-
-	public void setEnviadoEm(LocalDateTime enviadoEm) {
-		this.enviadoEm = enviadoEm;
-	}
-
 }

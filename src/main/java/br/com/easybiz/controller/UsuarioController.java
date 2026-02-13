@@ -94,7 +94,7 @@ public class UsuarioController {
         Long usuarioLogadoId = authContextService.getUsuarioIdByEmail(principal.getName());
 
         Usuario usuario = usuarioRepository.findById(usuarioLogadoId)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new br.com.easybiz.exception.ResourceNotFoundException("Usuario nao encontrado"));
 
         usuario.setFotoUrl(dto.url());
         usuarioRepository.save(usuario);

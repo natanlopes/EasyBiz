@@ -36,12 +36,10 @@ public class PedidoServico {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Quem está pedindo o serviço
     @ManyToOne
     @JoinColumn(name = "cliente_id", nullable = false)
     private Usuario cliente;
 
-    // Negócio que vai atender
     @ManyToOne
     @JoinColumn(name = "negocio_id", nullable = false)
     private Negocio negocio;
@@ -50,11 +48,9 @@ public class PedidoServico {
     @Column(nullable = false)
     private StatusPedido status;
 
-    // Descrição livre (ex: "preciso trocar um motor", "corte hoje à tarde")
     @Column(columnDefinition = "TEXT")
     private String descricao;
 
-    // Data desejada (flexível)
     private LocalDateTime dataDesejada;
 
     @JsonIgnore
@@ -62,70 +58,4 @@ public class PedidoServico {
     private List<Mensagem> mensagens;
 
     private LocalDateTime criadoEm;
-
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
-
-	public Usuario getCliente() {
-		return cliente;
-	}
-
-	public void setCliente(Usuario cliente) {
-		this.cliente = cliente;
-	}
-
-	public Negocio getNegocio() {
-		return negocio;
-	}
-
-	public void setNegocio(Negocio negocio) {
-		this.negocio = negocio;
-	}
-
-	public StatusPedido getStatus() {
-		return status;
-	}
-
-	public void setStatus(StatusPedido status) {
-		this.status = status;
-	}
-
-	public String getDescricao() {
-		return descricao;
-	}
-
-	public void setDescricao(String descricao) {
-		this.descricao = descricao;
-	}
-
-	public LocalDateTime getDataDesejada() {
-		return dataDesejada;
-	}
-
-	public void setDataDesejada(LocalDateTime dataDesejada) {
-		this.dataDesejada = dataDesejada;
-	}
-
-	public List<Mensagem> getMensagens() {
-		return mensagens;
-	}
-
-	public void setMensagens(List<Mensagem> mensagens) {
-		this.mensagens = mensagens;
-	}
-
-	public LocalDateTime getCriadoEm() {
-		return criadoEm;
-	}
-
-	public void setCriadoEm(LocalDateTime criadoEm) {
-		this.criadoEm = criadoEm;
-	}
-
-
 }

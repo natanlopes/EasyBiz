@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.easybiz.dto.AtualizarFotoDTO;
 import br.com.easybiz.dto.CriarNegocioDTO;
+import br.com.easybiz.dto.NegocioResponseDTO;
 import br.com.easybiz.model.Negocio;
 import br.com.easybiz.service.AuthContextService;
 import br.com.easybiz.service.NegocioService;
@@ -53,8 +54,7 @@ public class NegocioController {
             @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
     })
     @PostMapping
-    public ResponseEntity<Negocio> criar(@RequestBody @Valid CriarNegocioDTO dto, Principal principal) {
-        // Segurança: Pega ID do token, prevenindo que crie em nome de outro (IDOR)
+    public ResponseEntity<NegocioResponseDTO> criar(@RequestBody @Valid CriarNegocioDTO dto, Principal principal) {
         Long usuarioLogadoId = authContextService.getUsuarioIdByEmail(principal.getName());
 
         Negocio negocio = negocioService.criarNegocio(
@@ -62,19 +62,21 @@ public class NegocioController {
                 dto.nome(),
                 dto.categoria()
         );
-        return ResponseEntity.ok(negocio);
+        return ResponseEntity.ok(NegocioResponseDTO.fromEntity(negocio));
     }
 
     @GetMapping("/busca")
     @Operation(summary = "Busca inteligente por localização e ranking")
-    public ResponseEntity<List<Negocio>> buscar(
+    public ResponseEntity<List<NegocioResponseDTO>> buscar(
             @RequestParam Double lat,
             @RequestParam Double lon,
             @RequestParam(required = false) String busca
     ) {
-        return ResponseEntity.ok(
-                negocioService.buscarNegocios(lat, lon, busca)
-        );
+        List<NegocioResponseDTO> resultado = negocioService.buscarNegocios(lat, lon, busca)
+                .stream()
+                .map(NegocioResponseDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(resultado);
     }
 
     @PatchMapping("/{id}/logo")
