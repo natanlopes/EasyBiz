@@ -68,8 +68,8 @@ A nota média do negócio é recalculada a cada nova avaliação e persistida na
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   SPRING SECURITY CONTEXT                    │
-│                   (Principal = User ID)                      │
+│                   SPRING SECURITY CONTEXT                   │
+│                   (Principal = email do usuário)            │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼

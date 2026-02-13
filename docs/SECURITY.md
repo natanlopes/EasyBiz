@@ -85,7 +85,8 @@ O sistema utiliza **BCrypt** para hash de senhas, que é o padrão da indústria
 
 ### Código de Referência
 
-```java
+```
+java
 // SecurityConfig.java - Bean do encoder
 @Bean
 public PasswordEncoder passwordEncoder() {
@@ -169,7 +170,7 @@ O protocolo WebSocket não suporta headers nativos no handshake do navegador.
 2. Lê header nativo `Authorization`
 3. Valida Token JWT
 4. **Se inválido:** Rejeita conexão
-5. **Se válido:** Injeta Principal (User ID) na sessão
+5. **Se válido:** Injeta Principal (email do usuário) na sessão
 
 ---
 
@@ -183,12 +184,16 @@ O sistema **ignora** qualquer ID de usuário enviado no corpo do JSON.
 
 **Regra:** O remetente é SEMPRE extraído do `Principal` (Token JWT), nunca do payload.
 
-```java
+```
+java
 // ❌ NUNCA confiar no payload
 Long remetenteId = dto.getUsuarioId(); // IGNORADO
 
 // ✅ SEMPRE usar o Principal do token
-Long remetenteId = Long.parseLong(principal.getName());
+String remetenteEmail = principal.getName();
+Long remetenteId = authContextService.getUsuarioIdByEmail(remetenteEmail);
+
+
 ```
 
 ---
