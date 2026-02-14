@@ -42,7 +42,7 @@ import jakarta.validation.Valid;
 public class AvaliacaoController {
 
     private final AvaliacaoService avaliacaoService;
-    private final AuthContextService authContextService; // ✅ Injeção do serviço de contexto
+    private final AuthContextService authContextService; //  Injeção do serviço de contexto
 
     public AvaliacaoController(AvaliacaoService avaliacaoService, AuthContextService authContextService) {
         this.avaliacaoService = avaliacaoService;
