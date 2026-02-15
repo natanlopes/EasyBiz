@@ -1,17 +1,9 @@
-## 📘 EasyBiz API – Contrato Completo para Consumo (Swagger-like)
+# EasyBiz API - Contrato Completo
 
+> **Version:** 1.1.0
+> **Last Update:** 2026-02-15
 
-
-> Current Version: **v1**
-> Last Update: 2026-01-30
-
-## Version
-- v1.0 – Chat, Pedidos, Autenticação JWT
-- v2.0 – Pagamentos, Avaliações, Notificações Push
-
-## 📦 API v1 – Chat e Pedidos
-
-Base URL (local):
+## Base URL
 
 ```
 http://localhost:8080
@@ -21,378 +13,620 @@ Todos os endpoints protegidos exigem o header:
 
 ```
 Authorization: Bearer {JWT}
-
 ```
 
-### 🔹 1) Autenticação
-📌 POST /auth/login
+---
+
+## 1. Autenticacao
+
+### POST /auth/login
 
 Autentica e retorna token JWT.
 
-Request
+**Auth:** Nao
 
-```
+**Request:**
+```json
 {
   "email": "usuario@dominio.com",
   "senha": "123456"
 }
-
-
 ```
 
-Response 200
-
-```
+**Response 200:**
+```json
 {
-  "token": "eyJhbGc..."
+  "token": "eyJhbGciOiJIUzI1NiJ9..."
 }
-
 ```
 
-## ✔️ Sem autenticação.
+**Error 401:** Credenciais invalidas
 
-🔹 2) Usuários
-📌 POST /usuarios
+---
 
-Cria um novo usuário (cliente ou potencial prestador).
+### POST /auth/esqueci-senha
 
-Request
+Solicita recuperacao de senha. Envia codigo de 6 digitos por email.
 
-```
+**Auth:** Nao
+
+**Request:**
+```json
 {
-  "nomeCompleto": "João Silva",
+  "email": "usuario@dominio.com"
+}
+```
+
+**Response 200:**
+```json
+{
+  "mensagem": "Se o email estiver cadastrado, enviaremos um codigo de recuperacao."
+}
+```
+
+> **Seguranca:** Sempre retorna 200, independente de o email existir ou nao, para nao revelar quais emails estao cadastrados.
+
+---
+
+### POST /auth/redefinir-senha
+
+Redefine a senha usando o codigo recebido por email.
+
+**Auth:** Nao
+
+**Request:**
+```json
+{
+  "token": "482917",
+  "novaSenha": "minhaNovaSenha123"
+}
+```
+
+**Response 200:**
+```json
+{
+  "mensagem": "Senha redefinida com sucesso."
+}
+```
+
+**Error 400:** Codigo invalido, expirado ou ja utilizado.
+
+**Validacao:**
+- `token`: obrigatorio (codigo de 6 digitos)
+- `novaSenha`: obrigatorio, minimo 6 caracteres
+
+---
+
+## 2. Usuarios
+
+### POST /usuarios
+
+Cadastra um novo usuario.
+
+**Auth:** Nao
+
+**Request:**
+```json
+{
+  "nomeCompleto": "Joao Silva",
   "email": "joao@email.com",
   "senha": "123456"
 }
 ```
 
-Response
-201 CREATED
-
-📌 Sem autenticação (perfil público para cadastro).
-
-## 🔹 3) Negócios (Prestadores)
-📌 POST /negocios 🔒
-
-Cria negócio vinculado ao usuário autenticado.
-
-Request
-
-```
+**Response 200:**
+```json
 {
-  "nome": "Barbearia do João",
-  "descricao": "Cortes e barbas",
+  "id": 1,
+  "nome": "Joao Silva",
+  "email": "joao@email.com",
+  "fotoUrl": null
+}
+```
+
+**Error 400:** Email ja cadastrado
+
+**Validacao:**
+- `nomeCompleto`: obrigatorio
+- `email`: obrigatorio, formato email valido
+- `senha`: obrigatorio
+
+---
+
+### GET /usuarios/me
+
+Retorna os dados do usuario autenticado.
+
+**Auth:** Sim
+
+**Response 200:**
+```json
+{
+  "id": 1,
+  "nome": "Joao Silva",
+  "email": "joao@email.com",
+  "fotoUrl": "https://example.com/foto.jpg"
+}
+```
+
+---
+
+### GET /usuarios/{id}
+
+Retorna o perfil publico de um usuario.
+
+**Auth:** Sim
+
+**Response 200:**
+```json
+{
+  "id": 1,
+  "nome": "Joao Silva",
+  "email": "joao@email.com",
+  "fotoUrl": "https://example.com/foto.jpg"
+}
+```
+
+**Error 404:** Usuario nao encontrado
+
+---
+
+### PATCH /usuarios/me/foto
+
+Atualiza a foto de perfil do usuario autenticado.
+
+**Auth:** Sim
+
+**Request:**
+```json
+{
+  "url": "https://example.com/nova-foto.jpg"
+}
+```
+
+**Response:** 204 No Content
+
+**Validacao:**
+- `url`: obrigatorio, formato URL valido
+
+---
+
+## 3. Negocios
+
+### POST /negocios
+
+Cria um negocio vinculado ao usuario autenticado.
+
+**Auth:** Sim
+
+**Request:**
+```json
+{
+  "nome": "Barbearia do Joao",
   "categoria": "BARBEARIA"
 }
 ```
 
-Response 201
-
-```
+**Response 200:**
+```json
 {
-  "id": 10,
-  "nome": "Barbearia do João",
-  "descricao": "Cortes e barbas",
-  ...
+  "id": 1,
+  "nome": "Barbearia do Joao",
+  "categoria": "BARBEARIA",
+  "usuarioId": 1,
+  "nomeUsuario": "Joao Silva",
+  "ativo": true,
+  "latitude": null,
+  "longitude": null,
+  "enderecoCompleto": null,
+  "notaMedia": 0.0,
+  "logoUrl": null
 }
 ```
 
-## 📌 GET /negocios
+**Validacao:**
+- `nome`: obrigatorio
+- `categoria`: obrigatorio
 
-Lista todos os negócios disponíveis.
-
-Query (opcional)
-Exemplo:
-
-/negocios?nome=barbearia
-
-
-Response
-
+**Categorias disponiveis (enum TipoNegocio):**
 ```
+BARBEARIA, MECANICA, ELETRICISTA, ENCANADOR, PEDREIRO,
+PINTOR, PERSONAL_TRAINER, MOTOTAXI, FRETE, LIMPEZA,
+JARDINAGEM, COZINHEIRO, COSTUREIRA, MANICURE, MASSAGISTA,
+FOTOGRAFO, PROFESSOR_PARTICULAR, VETERINARIO, OUTROS
+```
+
+---
+
+### GET /negocios/busca
+
+Busca inteligente por localizacao e ranking.
+
+**Auth:** Nao
+
+**Parametros:**
+
+| Param | Tipo | Obrigatorio | Descricao |
+|-------|------|-------------|-----------|
+| `lat` | Double | Sim | Latitude do usuario |
+| `lon` | Double | Sim | Longitude do usuario |
+| `busca` | String | Nao | Termo de busca (nome ou categoria) |
+
+**Response 200:**
+```json
 [
   {
-    "id": 10,
-    "nome": "Barbearia do João",
-    ...
+    "id": 1,
+    "nome": "Barbearia do Joao",
+    "categoria": "BARBEARIA",
+    "usuarioId": 1,
+    "nomeUsuario": "Joao Silva",
+    "ativo": true,
+    "latitude": -23.5505,
+    "longitude": -46.6333,
+    "enderecoCompleto": "Rua das Flores, 123",
+    "notaMedia": 4.5,
+    "logoUrl": "https://example.com/logo.jpg"
   }
 ]
 ```
 
-## 📌 GET /negocios/{id}
+> **Funcionamento:** Usa formula de Haversine no PostgreSQL para calcular distancia. Raio padrao de 30km. Resultados ordenados por avaliacao. Negocios sem coordenadas sao excluidos.
 
-Retorna detalhes de um negócio específico.
+---
 
-Response
+### PATCH /negocios/{id}/logo
 
-```
+Atualiza o logo do negocio. Requer ser o dono.
+
+**Auth:** Sim (somente o dono)
+
+**Request:**
+```json
 {
-  "id": 10,
-  "nome": "Barbearia do João",
-  ...
+  "url": "https://example.com/novo-logo.jpg"
 }
 ```
 
-## 🔹 4) Pedidos de Serviço
-📌 POST /pedidos 🔒
+**Response:** 204 No Content
 
-Cria um pedido (nova sala de negociação).
+**Error 403:** Nao e o dono do negocio
 
-Request
+---
 
-```
+## 4. Pedidos de Servico
+
+### POST /pedidos
+
+Cria um pedido de servico (nova sala de negociacao).
+
+**Auth:** Sim
+
+**Request:**
+```json
 {
-  "negocioId": 10,
-  "descricao": "Cortar cabelo às 15h"
+  "negocioId": 1,
+  "descricao": "Cortar cabelo as 15h"
 }
 ```
 
-Response
-
-```
+**Response 200:**
+```json
 {
-  "id": 55,
+  "id": 1,
+  "clienteId": 2,
+  "clienteNome": "Maria Santos",
+  "negocioId": 1,
+  "negocioNome": "Barbearia do Joao",
+  "descricao": "Cortar cabelo as 15h",
+  "dataDesejada": null,
   "status": "ABERTO",
-  "clienteId": 7,
-  "negocioId": 10
+  "criadoEm": "2026-02-15T14:30:00"
 }
 ```
 
-## 📌 GET /pedidos/{id} 🔒
+**Validacao:**
+- `negocioId`: obrigatorio
+- `descricao`: obrigatorio
 
-Retorna os detalhes do pedido específico.
+---
 
-Response
+### GET /pedidos
 
-```
+Lista pedidos do usuario autenticado (paginado).
+
+**Auth:** Sim
+
+**Parametros de paginacao:**
+
+| Param | Tipo | Default | Descricao |
+|-------|------|---------|-----------|
+| `page` | int | 0 | Numero da pagina |
+| `size` | int | 20 | Itens por pagina |
+| `sort` | string | - | Ordenacao (ex: `criadoEm,desc`) |
+
+**Response 200:**
+```json
 {
-  "id": 55,
-  "status": "ABERTO",
-  "descricao": "...",
-  "clienteId": 7,
-  "negocioId": 10
+  "content": [
+    {
+      "id": 1,
+      "clienteId": 2,
+      "clienteNome": "Maria Santos",
+      "negocioId": 1,
+      "negocioNome": "Barbearia do Joao",
+      "descricao": "Cortar cabelo as 15h",
+      "dataDesejada": null,
+      "status": "ACEITO",
+      "criadoEm": "2026-02-15T14:30:00"
+    }
+  ],
+  "totalElements": 15,
+  "totalPages": 1,
+  "size": 20,
+  "number": 0
 }
 ```
 
-## 🔄 Workflow do Pedido (Status)
+> Retorna pedidos onde o usuario e cliente OU dono do negocio.
 
-## ➡ Todos esses endpoints exigem JWT e validação de autorização de negócio/cliente.
+---
 
-## 📌 PATCH /pedidos/{id}/aceitar 🔒
+### PATCH /pedidos/{id}/aceitar
 
 Prestador aceita o pedido.
 
-Response
+**Auth:** Sim (somente o prestador)
 
-```
+**Response:** 204 No Content
+
+**Error 400:** Pedido nao esta ABERTO
+**Error 403:** Nao e o prestador
+
+---
+
+### PATCH /pedidos/{id}/recusar
+
+Prestador recusa o pedido.
+
+**Auth:** Sim (somente o prestador)
+
+**Response:** 204 No Content
+
+---
+
+### PATCH /pedidos/{id}/concluir
+
+Prestador finaliza o pedido.
+
+**Auth:** Sim (somente o prestador)
+
+**Response:** 204 No Content
+
+**Error 400:** Pedido nao esta ACEITO
+
+> Regra: Nao e possivel concluir um pedido que nao foi aceito.
+
+---
+
+### PATCH /pedidos/{id}/cancelar
+
+Cliente cancela o pedido.
+
+**Auth:** Sim (cliente ou prestador)
+
+**Response:** 204 No Content
+
+---
+
+## 5. Avaliacoes
+
+### POST /avaliacoes/pedido/{pedidoId}
+
+Cliente avalia um pedido concluido.
+
+**Auth:** Sim (somente o cliente)
+
+**Pre-requisito:** Pedido com status `CONCLUIDO`.
+
+**Request:**
+```json
 {
-  "id": 55,
-  "status": "ACEITO"
+  "nota": 5,
+  "comentario": "Excelente profissional!"
 }
 ```
 
-
-## ✔️ Somente o dono do negócio pode chamar.
-
-📌 PATCH /pedidos/{id}/recusar 🔒
-
-Prestador rejeita o pedido.
-
-Response
-
-```
+**Response 200:**
+```json
 {
-  "id": 55,
-  "status": "RECUSADO"
+  "id": 1,
+  "nota": 5,
+  "comentario": "Excelente profissional!",
+  "dataAvaliacao": "2026-02-15T16:00:00",
+  "pedidoId": 1,
+  "avaliadorNome": "Maria Santos",
+  "avaliadoNome": "Joao Silva",
+  "negocioId": 1,
+  "negocioNome": "Barbearia do Joao"
 }
 ```
 
+**Validacao:**
+- `nota`: obrigatorio, inteiro de 1 a 5
+- `comentario`: opcional, maximo 500 caracteres
 
+**Regras:**
+- Apenas pedidos CONCLUIDOS podem ser avaliados
+- Cada pedido so pode ser avaliado uma vez
+- Somente o cliente pode avaliar
+- A nota media do negocio e recalculada automaticamente
 
-## 📌 PATCH /pedidos/{id}/concluir 🔒
+---
 
-Finaliza o pedido de serviço.
+## 6. Mensagens (REST)
 
-Response
+### POST /pedidos/{pedidoId}/mensagens
 
-```
+Envia mensagem no chat do pedido.
 
+**Auth:** Sim (participante do pedido)
+
+**Request:**
+```json
 {
-  "id": 55,
-  "status": "CONCLUIDO"
+  "conteudo": "Ola, gostaria de agendar para sabado!"
 }
 ```
 
-## ✔️ Só pode ser feito se o pedido já tiver sido ACEITO.
-
-- 📌 PATCH /pedidos/{id}/cancelar 🔒
-
-Cliente cancela pedido.
-
-Response
-204 NO CONTENT
-
-##🔹 5) Mensagens – REST (Histórico)
-- 📌 GET /pedidos/{id}/mensagens 🔒
-
-Retorna lista de mensagens do chat do pedido.
-
-Response
-
-```
-[
-  {
-    "id": 99,
-    "pedidoServicoId": 55,
-    "remetenteId": 7,
-    "conteudo": "Olá!",
-    ...
-  },
-  ...
-]
-```
-
-✔️ Apenas Cliente e Prestador.
-
-## 🔹 6) WebSocket – Tempo Real
-Endpoint de conexão
-ws://localhost:8080/ws-chat
-
-
-Headers:
-
-Authorization: Bearer {JWT}
-
-Subscriptions (STOMP)
-Ação	Tópico	Payload
-
-```
-Ouvir mensagens	/topic/mensagens/{pedidoId}	Mensagem tempo real
-Ouvir “digitando”	/topic/mensagens/{pedidoId}/digitando	{"usuarioId", "usuarioNome","digitando":true/false}
-Ouvir leitura	/topic/mensagens/{pedidoId}/lida	{"mensagemId","quemLeuId","pedidoId","lidoEm"}
-Ouvir último visto	/topic/mensagens/{pedidoId}/ultimo-visto	{"pedidoId","vistoEm"}
-Enviar via STOMP
-📌 Enviar mensagem
-/app/chat/{pedidoId}
-```
-
-Payload:
-
-```
-
+**Response 200:**
+```json
 {
-  "conteudo": "Mensagem do usuário"
+  "id": 1,
+  "pedidoServicoId": 1,
+  "remetenteId": 2,
+  "remetenteNome": "Maria Santos",
+  "conteudo": "Ola, gostaria de agendar para sabado!",
+  "enviadoEm": "2026-02-15T14:35:00",
+  "lida": false,
+  "lidaEm": null,
+  "remetenteFotoUrl": "https://example.com/foto.jpg"
 }
 ```
 
-✔ O backend ignora campo usuarioId no WS — usa o do token.
+---
 
-📌 “Digitando”
-/app/chat/{pedidoId}/digitando
+### GET /pedidos/{pedidoId}/mensagens
 
+Retorna historico de mensagens do chat.
 
-Payload:
+**Auth:** Sim (participante do pedido)
 
+**Response 200:** Lista de mensagens (mesma estrutura acima)
+
+**Error 403:** Nao e participante do pedido (protecao IDOR)
+
+---
+
+### POST /pedidos/{pedidoId}/mensagens/lidas
+
+Marca mensagens como lidas.
+
+**Auth:** Sim
+
+**Response:** 204 No Content
+
+---
+
+## 7. WebSocket (Tempo Real)
+
+### Conexao
+
+| Propriedade | Valor |
+|-------------|-------|
+| Endpoint | `ws://localhost:8080/ws-chat` |
+| Protocolo | STOMP sobre SockJS |
+| Auth | `Authorization: Bearer {JWT}` no CONNECT |
+
+### Topicos (Subscribe)
+
+| Topico | Payload |
+|--------|---------|
+| `/topic/mensagens/{pedidoId}` | Mensagem em tempo real |
+| `/topic/mensagens/{pedidoId}/digitando` | Indicador de digitacao |
+| `/topic/mensagens/{pedidoId}/lida` | Confirmacao de leitura |
+| `/topic/mensagens/{pedidoId}/ultimo-visto` | Ultimo visto |
+
+### Enviar (Send)
+
+**Enviar mensagem:** `/app/chat/{pedidoId}`
+```json
+{
+  "conteudo": "Mensagem do usuario"
+}
 ```
+
+**Indicador de digitacao:** `/app/chat/{pedidoId}/digitando`
+```json
 {
   "usuarioId": 7,
   "usuarioNome": "Cliente",
   "digitando": true
 }
 ```
-## 📌 Marcar como lida (event)
-/app/chat/{pedidoId}/lida/{mensagemId}
 
+**Marcar como lida:** `/app/chat/{pedidoId}/lida/{mensagemId}`
 
-## Payload:
-
-{"usuarioId": 7}
-
-
-Emitido para /topic/mensagens/{pedidoId}/lida
-
-## 🔹 7) Regras de segurança da API
-
-✔ Rota protegida se não estiver em /auth ou /usuarios ➜ JWT obrigatório
-✔ Token deve ser válido e não expirado
-✔ Acesso a pedido/chat só permitido a participante do pedido
-✔ WebSocket validado no handshake com token
-
-
-- ✨ Padronização dos responses
-
-Retornar mensagens de erro com estrutura:
-
-```
-{
-  "timestamp": "...",
-  "status": 403,
-  "error": "Forbidden",
-  "message": "Mensagem de erro legível",
-  "path": "/pedidos/55/aceitar"
-}
-```
-
-## 🔹 8) Avaliações (Review)
-📌 POST /avaliacoes/pedido/{pedidoId} 🔒
-
-Cliente avalia o serviço prestado.
-
-**Pré-requisito:** O pedido deve estar com status `CONCLUIDO`.
-
-**Request:**
-
-```
-{
-  "nota": 5,
-  "comentario": "Excelente profissional, muito rápido!"
-}
-
-```
-Response (200 OK):
-
-```
-{
-  "id": 1,
-  "nota": 5,
-  "comentario": "Excelente profissional...",
-  "dataAvaliacao": "2026-01-27T10:00:00"
-}
-```
-
-Para facilitar migração.
-
-📍 Validação
-
-Todos os recursos que lidam com dados sensíveis devem retornar 400 quando o corpo é inválido e 401 quando o token é inválido.
-
-📚 Referência interativa
-
-Swagger UI local:
-👉 http://localhost:8080/swagger-ui/index.html
-
-
+> O backend ignora campo `usuarioId` no payload - sempre usa o do token JWT.
 
 ---
-## 🆕 Infraestrutura (V1 Final)
 
-### 🔐 GET /usuarios/me
-Retorna os dados do usuário autenticado com base no JWT.
+## 8. Tratamento de Erros
 
-Response:
+Todos os erros retornam a estrutura padronizada:
+
+```json
 {
-  "id": 1,
-  "nomeCompleto": "Marcos Silva",
-  "email": "marcos@email.com",
-  "fotoUrl": "https://cdn.app/avatar.png"
-}
-
-### ⚠️ Tratamento Global de Erros
-Todos os erros de regra de negócio retornam JSON padronizado:
-
-{
-  "timestamp": "...",
+  "timestamp": "2026-02-15T10:30:00",
   "status": 400,
-  "error": "Erro de Regra de Negócio",
-  "message": "Mensagem clara para o App"
+  "error": "Erro de Regra de Negocio",
+  "message": "Mensagem legivel para o app"
 }
+```
+
+### Status codes
+
+| Codigo | Quando |
+|--------|--------|
+| 200 | Sucesso (GET, POST, PATCH) |
+| 201 | Recurso criado |
+| 204 | Sucesso sem corpo (No Content) |
+| 400 | Validacao ou regra de negocio |
+| 401 | Token ausente, invalido ou expirado |
+| 403 | Token valido mas sem permissao |
+| 404 | Recurso nao encontrado |
+| 429 | Rate limit excedido (max 10 req/min em login e cadastro) |
+| 500 | Erro interno do servidor |
+
+---
+
+## 9. Rate Limiting
+
+Endpoints com limite de requisicoes (10 por minuto por IP):
+- `POST /auth/login`
+- `POST /usuarios`
+
+**Response 429:**
+```json
+{
+  "status": 429,
+  "error": "Too Many Requests",
+  "message": "Limite de requisicoes excedido. Tente novamente em 1 minuto."
+}
+```
+
+---
+
+## 10. Regras de Seguranca
+
+- Rota protegida se nao estiver listada como publica -> JWT obrigatorio
+- Token deve ser valido e nao expirado
+- Acesso a pedido/chat so permitido a participantes
+- WebSocket validado no handshake com token
+- IDs de usuario extraidos do token, nunca do payload (protecao IDOR)
+
+### Endpoints publicos
+- `POST /auth/login`
+- `POST /auth/esqueci-senha`
+- `POST /auth/redefinir-senha`
+- `POST /usuarios`
+- `GET /negocios/**`
+- `/ws-chat/**`
+- `/swagger-ui/**`
+- `/actuator/**`
+
+---
+
+## Swagger UI
+
+Documentacao interativa: http://localhost:8080/swagger-ui/index.html

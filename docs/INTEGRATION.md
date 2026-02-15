@@ -1,10 +1,10 @@
-# 📘 EasyBiz — API Integration Guide
+# EasyBiz - API Integration Guide
 
-**Version:** 1.0.0  
-**Last Updated:** 2026-02-06  
-**Backend:** Spring Boot 3.4 · Java 17 · PostgreSQL  
-**Frontend:** Kotlin Multiplatform · Compose Multiplatform  
-**Audience:** Frontend Engineers (Edson Neto)  
+**Version:** 1.1.0
+**Last Updated:** 2026-02-15
+**Backend:** Spring Boot 3.4 - Java 17 - PostgreSQL
+**Frontend:** Kotlin Multiplatform - Compose Multiplatform
+**Audience:** Frontend Engineers (Edson Neto)
 **Maintainer:** Natanael Lopes (Backend)
 
 ---
@@ -15,17 +15,10 @@
 2. [Environments](#2-environments)
 3. [Authentication](#3-authentication)
 4. [API Reference](#4-api-reference)
-   - 4.1 [Auth] (#41-auth)
-   - 4.2 [Users] (#42-users)
-   
- - 4.3 [Businesses Negocios] (#43-businesses-negocios)
-   - 4.4 [Orders (Pedidos)] (#44-orders-pedidos)
-   - 4.5 [Reviews (Avaliacoes)] (#45-reviews-avaliacoes)
-   - 4.6 [Chat (Messages)] (#46-chat-messages)
-5. [WebSocket - Real-Time Chat] (#5-websocket---real-time-chat)
+5. [WebSocket - Real-Time Chat](#5-websocket---real-time-chat)
 6. [Error Handling](#6-error-handling)
 7. [Screen-to-Endpoint Mapping](#7-screen-to-endpoint-mapping)
-8. [Kotlin/Ktor Implementation Guide] (#8-kotlinktor-implementation-guide)
+8. [Kotlin/Ktor Implementation Guide](#8-kotlinktor-implementation-guide)
 9. [Data Models (DTOs)](#9-data-models-dtos)
 10. [Status Codes and Business Rules](#10-status-codes-and-business-rules)
 11. [Testing Checklist](#11-testing-checklist)
@@ -49,15 +42,15 @@ docker-compose up -d
 curl http://localhost:8080/swagger-ui/index.html
 ```
 
-**First API call — Register + Login:**
+**First API call - Register + Login:**
 
 ```bash
 # Register
-curl -X POST http://localhost:8080/auth/cadastro \
+curl -X POST http://localhost:8080/usuarios \
   -H "Content-Type: application/json" \
   -d '{"nomeCompleto":"Edson Neto","email":"edson@test.com","senha":"123456"}'
 
-# Login → get token
+# Login -> get token
 curl -X POST http://localhost:8080/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"edson@test.com","senha":"123456"}'
@@ -71,9 +64,9 @@ curl -X POST http://localhost:8080/auth/login \
 
 | Environment | Base URL | Status |
 |-------------|----------|--------|
-| Local | `http://localhost:8080` | ✅ Active |
-| Staging | `https://easybiz-staging.up.railway.app` | 🔜 Planned |
-| Production | `https://api.easybiz.com.br` | 🔜 Planned |
+| Local | `http://localhost:8080` | Active |
+| Staging | `https://easybiz-staging.up.railway.app` | Planned |
+| Production | `https://api.easybiz.com.br` | Planned |
 
 **Important:** All endpoints require HTTPS in staging/production. Local development uses HTTP.
 
@@ -86,26 +79,22 @@ EasyBiz uses **JWT (JSON Web Token)** with stateless authentication. No sessions
 ### 3.1 Auth Flow
 
 ```
-┌─────────┐         ┌─────────┐         ┌──────────┐
-│  App     │         │  API    │         │ Database │
-└────┬────┘         └────┬────┘         └────┬─────┘
-     │                    │                   │
-     │ POST /auth/login   │                   │
-     │───────────────────>│                   │
-     │                    │  Validate BCrypt  │
-     │                    │──────────────────>│
-     │                    │<──────────────────│
-     │  { token: "eyJ.." }│                   │
-     │<───────────────────│                   │
-     │                    │                   │
-     │ GET /usuarios/me   │                   │
-     │ Authorization:     │                   │
-     │ Bearer eyJ...      │                   │
-     │───────────────────>│                   │
-     │                    │  Extract userId   │
-     │                    │  from token       │
-     │  { id, nome, ... } │                   │
-     │<───────────────────│                   │
+[App]                          [API]                    [Database]
+  |                              |                           |
+  | POST /auth/login             |                           |
+  |----------------------------->|                           |
+  |                              | Validate BCrypt           |
+  |                              |-------------------------->|
+  |                              |<--------------------------|
+  | { token: "eyJ.." }          |                           |
+  |<-----------------------------|                           |
+  |                              |                           |
+  | GET /usuarios/me             |                           |
+  | Authorization: Bearer eyJ... |                           |
+  |----------------------------->|                           |
+  |                              | Extract email from token  |
+  | { id, nome, ... }           |                           |
+  |<-----------------------------|                           |
 ```
 
 ### 3.2 Token Rules
@@ -115,16 +104,16 @@ EasyBiz uses **JWT (JSON Web Token)** with stateless authentication. No sessions
 | Algorithm | HS256 |
 | Expiration | 24 hours (86400000 ms) |
 | Header format | `Authorization: Bearer <token>` |
-| Token content | userId embedded in subject claim |
+| Token content | User email embedded in subject claim |
 
 ### 3.3 How to Use the Token
 
-Every request (except `/auth/**`) **must** include the token:
+Every request (except public endpoints) **must** include the token:
 
 ```
 GET /usuarios/me HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzA3...
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 Content-Type: application/json
 ```
 
@@ -137,7 +126,37 @@ When the token expires, the API returns `401 Unauthorized`. The app should:
 3. Clear stored token
 4. After re-login, retry the failed request
 
-> **Note (V1):** There is no refresh token mechanism. The user must re-login after 24h. This is planned for V1.1.
+> **Note (V1):** There is no refresh token mechanism. The user must re-login after 24h.
+
+### 3.5 Password Recovery Flow
+
+```
+[App]                          [API]                    [Email]
+  |                              |                         |
+  | POST /auth/esqueci-senha     |                         |
+  | { email }                    |                         |
+  |----------------------------->|                         |
+  |                              | Generate 6-digit code   |
+  |                              |------------------------>|
+  |                              |  Send code via email    |
+  | { mensagem: "Se o email..." }|                         |
+  |<-----------------------------|                         |
+  |                              |                         |
+  | POST /auth/redefinir-senha   |                         |
+  | { token: "482917",           |                         |
+  |   novaSenha: "nova123" }     |                         |
+  |----------------------------->|                         |
+  |                              | Validate code           |
+  |                              | Update password (BCrypt)|
+  | { mensagem: "Senha..." }     |                         |
+  |<-----------------------------|                         |
+```
+
+**Security notes:**
+- Code expires in 15 minutes
+- Code is single-use (marked as used after successful reset)
+- API always returns 200 on esqueci-senha (doesn't reveal if email exists)
+- Previous unused codes are invalidated when a new one is requested
 
 ---
 
@@ -147,50 +166,14 @@ When the token expires, the API returns `401 Unauthorized`. The app should:
 
 ```
 Content-Type: application/json
-Authorization: Bearer <token>    # except /auth/** endpoints
+Authorization: Bearer <token>    # except public endpoints
 ```
 
 ---
 
 ### 4.1 Auth
 
-#### `POST /auth/cadastro` — Register User
-
-**Auth required:** No
-
-**Request:**
-```json
-{
-  "nomeCompleto": "Edson Neto",
-  "email": "edson@email.com",
-  "senha": "minhasenha123"
-}
-```
-
-**Response `201 Created`:**
-```json
-{
-  "id": 1,
-  "nomeCompleto": "Edson Neto",
-  "email": "edson@email.com"
-}
-```
-
-**Error `400 Bad Request`:**
-```json
-{
-  "error": "Email já cadastrado"
-}
-```
-
-**Validation rules:**
-- `nomeCompleto`: required, min 2 chars
-- `email`: required, valid email format, unique
-- `senha`: required, min 6 chars
-
----
-
-#### `POST /auth/login` — Login
+#### `POST /auth/login` - Login
 
 **Auth required:** No
 
@@ -205,24 +188,125 @@ Authorization: Bearer <token>    # except /auth/** endpoints
 **Response `200 OK`:**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzA3MjM0NTY3LCJleHAiOjE3MDczMjA5Njd9.abc123"
+  "token": "eyJhbGciOiJIUzI1NiJ9..."
+}
+```
+
+**Error `401 Unauthorized`:**
+```json
+{
+  "timestamp": "2026-02-15T10:00:00",
+  "status": 401,
+  "error": "Nao Autenticado",
+  "message": "Credenciais invalidas"
+}
+```
+
+> **Security:** Password is validated with BCrypt. The API never reveals whether the email exists or the password is wrong - always returns "Credenciais invalidas" for both cases.
+
+---
+
+#### `POST /auth/esqueci-senha` - Request Password Recovery
+
+**Auth required:** No
+
+**Request:**
+```json
+{
+  "email": "edson@email.com"
+}
+```
+
+**Response `200 OK`:**
+```json
+{
+  "mensagem": "Se o email estiver cadastrado, enviaremos um codigo de recuperacao."
+}
+```
+
+**Validation:**
+- `email`: required, valid email format
+
+---
+
+#### `POST /auth/redefinir-senha` - Reset Password
+
+**Auth required:** No
+
+**Request:**
+```json
+{
+  "token": "482917",
+  "novaSenha": "minhaNovaSenha123"
+}
+```
+
+**Response `200 OK`:**
+```json
+{
+  "mensagem": "Senha redefinida com sucesso."
 }
 ```
 
 **Error `400 Bad Request`:**
 ```json
 {
-  "error": "Credenciais inválidas"
+  "timestamp": "2026-02-15T10:00:00",
+  "status": 400,
+  "error": "Erro de Regra de Negocio",
+  "message": "Codigo invalido ou expirado"
 }
 ```
 
-> **Security:** Password is validated with BCrypt. The API never reveals whether the email exists or the password is wrong — always returns "Credenciais inválidas" for both cases.
+**Validation:**
+- `token`: required (6-digit code received by email)
+- `novaSenha`: required, min 6 characters
 
 ---
 
 ### 4.2 Users
 
-#### `GET /usuarios/me` — Get Current User Profile
+#### `POST /usuarios` - Register User
+
+**Auth required:** No
+
+**Request:**
+```json
+{
+  "nomeCompleto": "Edson Neto",
+  "email": "edson@email.com",
+  "senha": "minhasenha123"
+}
+```
+
+**Response `200 OK`:**
+```json
+{
+  "id": 1,
+  "nome": "Edson Neto",
+  "email": "edson@email.com",
+  "fotoUrl": null
+}
+```
+
+**Error `400 Bad Request`:**
+```json
+{
+  "timestamp": "2026-02-15T10:00:00",
+  "status": 400,
+  "error": "Erro de Regra de Negocio",
+  "message": "Email ja cadastrado"
+}
+```
+
+**Validation rules:**
+- `nomeCompleto`: required
+- `email`: required, valid email format, unique
+- `senha`: required
+
+---
+
+#### `GET /usuarios/me` - Get Current User Profile
 
 **Auth required:** Yes
 
@@ -230,21 +314,47 @@ Authorization: Bearer <token>    # except /auth/** endpoints
 ```json
 {
   "id": 1,
-  "nomeCompleto": "Edson Neto",
+  "nome": "Edson Neto",
   "email": "edson@email.com",
   "fotoUrl": "https://example.com/foto.jpg"
 }
 ```
 
-**Error `401 Unauthorized`:** Token missing or expired
-
 > **Frontend note:** Call this endpoint immediately after login to load the user profile, avatar, and permissions. Store the response in local state.
+
+---
+
+#### `GET /usuarios/{id}` - Get Public User Profile
+
+**Auth required:** Yes
+
+**Response `200 OK`:** Same structure as `/usuarios/me`
+
+**Error `404 Not Found`:** User not found
+
+---
+
+#### `PATCH /usuarios/me/foto` - Update Profile Photo
+
+**Auth required:** Yes
+
+**Request:**
+```json
+{
+  "url": "https://example.com/nova-foto.jpg"
+}
+```
+
+**Response:** `204 No Content`
+
+**Validation:**
+- `url`: required, valid URL format
 
 ---
 
 ### 4.3 Businesses (Negocios)
 
-#### `POST /negocios` — Create Business
+#### `POST /negocios` - Create Business
 
 **Auth required:** Yes (owner becomes the authenticated user)
 
@@ -252,33 +362,24 @@ Authorization: Bearer <token>    # except /auth/** endpoints
 ```json
 {
   "nome": "Barbearia do Edson",
-  "descricao": "Cortes modernos e barba",
-  "categoria": "BARBEARIA",
-  "endereco": "Rua das Flores, 123 - São Paulo",
-  "latitude": -23.5505,
-  "longitude": -46.6333,
-  "telefone": "11999999999"
+  "categoria": "BARBEARIA"
 }
 ```
 
-**Response `201 Created`:**
+**Response `200 OK`:**
 ```json
 {
   "id": 1,
   "nome": "Barbearia do Edson",
-  "descricao": "Cortes modernos e barba",
   "categoria": "BARBEARIA",
-  "endereco": "Rua das Flores, 123 - São Paulo",
-  "latitude": -23.5505,
-  "longitude": -46.6333,
-  "telefone": "11999999999",
-  "logoUrl": null,
+  "usuarioId": 1,
+  "nomeUsuario": "Edson Neto",
+  "ativo": true,
+  "latitude": null,
+  "longitude": null,
+  "enderecoCompleto": null,
   "notaMedia": 0.0,
-  "totalAvaliacoes": 0,
-  "dono": {
-    "id": 1,
-    "nomeCompleto": "Edson Neto"
-  }
+  "logoUrl": null
 }
 ```
 
@@ -292,59 +393,16 @@ FOTOGRAFO, PROFESSOR_PARTICULAR, VETERINARIO, OUTROS
 
 ---
 
-#### `GET /negocios` — List All Businesses
-
-**Auth required:** No
-
-**Response `200 OK`:**
-```json
-[
-  {
-    "id": 1,
-    "nome": "Barbearia do Edson",
-    "descricao": "Cortes modernos e barba",
-    "categoria": "BARBEARIA",
-    "logoUrl": "https://example.com/logo.jpg",
-    "notaMedia": 4.5,
-    "totalAvaliacoes": 12,
-    "latitude": -23.5505,
-    "longitude": -46.6333,
-    "dono": {
-      "id": 1,
-      "nomeCompleto": "Edson Neto"
-    }
-  }
-]
-```
-
----
-
-#### `GET /negocios/{id}` — Get Business by ID
-
-**Auth required:** No
-
-**Response `200 OK`:** Same structure as above (single object)
-
-**Error `404 Not Found`:**
-```json
-{
-  "error": "Negócio não encontrado"
-}
-```
-
----
-
-#### `GET /negocios/busca?nome={query}&latitude={lat}&longitude={lng}` — Smart Search
+#### `GET /negocios/busca` - Smart Search
 
 **Auth required:** No
 
 **Parameters:**
 | Param | Type | Required | Description |
 |-------|------|----------|-------------|
-| `nome` | string | No | Search by name (partial match) |
-| `latitude` | double | No | User's current latitude |
-| `longitude` | double | No | User's current longitude |
-| `categoria` | string | No | Filter by category enum |
+| `lat` | double | Yes | User's current latitude |
+| `lon` | double | Yes | User's current longitude |
+| `busca` | string | No | Search term (name or category) |
 
 **Response `200 OK`:**
 ```json
@@ -353,31 +411,36 @@ FOTOGRAFO, PROFESSOR_PARTICULAR, VETERINARIO, OUTROS
     "id": 1,
     "nome": "Barbearia do Edson",
     "categoria": "BARBEARIA",
+    "usuarioId": 1,
+    "nomeUsuario": "Edson Neto",
+    "ativo": true,
+    "latitude": -23.5505,
+    "longitude": -46.6333,
+    "enderecoCompleto": "Rua das Flores, 123",
     "notaMedia": 4.5,
-    "distanciaKm": 2.3,
     "logoUrl": "https://example.com/logo.jpg"
   }
 ]
 ```
 
-> **How it works:** Uses Haversine formula in PostgreSQL to calculate distance. Default radius is 30km. Results are sorted by rating and distance.
+> **How it works:** Uses Haversine formula in PostgreSQL to calculate distance. Default radius is 30km. Results are sorted by rating. Businesses without coordinates are excluded.
 
 > **Frontend note:** Request location permission from the user, then pass their GPS coordinates to this endpoint.
 
 ---
 
-#### `PATCH /negocios/{id}/logo` — Update Business Logo
+#### `PATCH /negocios/{id}/logo` - Update Business Logo
 
 **Auth required:** Yes (must be the business owner)
 
 **Request:**
 ```json
 {
-  "logoUrl": "https://example.com/new-logo.jpg"
+  "url": "https://example.com/new-logo.jpg"
 }
 ```
 
-**Response `200 OK`:** Updated business object
+**Response:** `204 No Content`
 
 **Error `403 Forbidden`:** If authenticated user is not the owner
 
@@ -385,7 +448,7 @@ FOTOGRAFO, PROFESSOR_PARTICULAR, VETERINARIO, OUTROS
 
 ### 4.4 Orders (Pedidos)
 
-#### `POST /pedidos` — Create Order (Client → Business)
+#### `POST /pedidos` - Create Order (Client -> Business)
 
 **Auth required:** Yes (authenticated user becomes the client)
 
@@ -397,21 +460,18 @@ FOTOGRAFO, PROFESSOR_PARTICULAR, VETERINARIO, OUTROS
 }
 ```
 
-**Response `201 Created`:**
+**Response `200 OK`:**
 ```json
 {
   "id": 1,
+  "clienteId": 2,
+  "clienteNome": "Joao Silva",
+  "negocioId": 1,
+  "negocioNome": "Barbearia do Edson",
   "descricao": "Corte de cabelo degradê + barba",
+  "dataDesejada": null,
   "status": "ABERTO",
-  "criadoEm": "2026-02-06T14:30:00",
-  "cliente": {
-    "id": 2,
-    "nomeCompleto": "João Silva"
-  },
-  "negocio": {
-    "id": 1,
-    "nome": "Barbearia do Edson"
-  }
+  "criadoEm": "2026-02-15T14:30:00"
 }
 ```
 
@@ -419,152 +479,126 @@ FOTOGRAFO, PROFESSOR_PARTICULAR, VETERINARIO, OUTROS
 
 ---
 
-#### `GET /pedidos/meus` — List My Orders
+#### `GET /pedidos` - List My Orders (Paginated)
 
 **Auth required:** Yes
 
+**Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `page` | int | 0 | Page number (0-indexed) |
+| `size` | int | 20 | Items per page |
+| `sort` | string | - | Sort field (e.g. `criadoEm,desc`) |
+
 **Response `200 OK`:**
 ```json
-[
-  {
-    "id": 1,
-    "descricao": "Corte degradê + barba",
-    "status": "ACEITO",
-    "criadoEm": "2026-02-06T14:30:00",
-    "cliente": { "id": 2, "nomeCompleto": "João Silva" },
-    "negocio": { "id": 1, "nome": "Barbearia do Edson" }
-  },
-  {
-    "id": 2,
-    "descricao": "Pintura residencial",
-    "status": "ABERTO",
-    "criadoEm": "2026-02-05T10:00:00",
-    "cliente": { "id": 2, "nomeCompleto": "João Silva" },
-    "negocio": { "id": 3, "nome": "Pintura Express" }
-  }
-]
+{
+  "content": [
+    {
+      "id": 1,
+      "clienteId": 2,
+      "clienteNome": "Joao Silva",
+      "negocioId": 1,
+      "negocioNome": "Barbearia do Edson",
+      "descricao": "Corte degradê + barba",
+      "dataDesejada": null,
+      "status": "ACEITO",
+      "criadoEm": "2026-02-15T14:30:00"
+    }
+  ],
+  "totalElements": 15,
+  "totalPages": 1,
+  "size": 20,
+  "number": 0
+}
 ```
 
 > **Note:** Returns all orders where the user is either the client OR the business owner.
 
 ---
 
-#### `PATCH /pedidos/{id}/aceitar` — Accept Order
+#### `PATCH /pedidos/{id}/aceitar` - Accept Order
 
 **Auth required:** Yes (must be the business owner)
 
-**Response `200 OK`:**
-```json
-{
-  "id": 1,
-  "status": "ACEITO",
-  "...": "..."
-}
-```
+**Response:** `204 No Content`
 
 **Error `403 Forbidden`:** Not the business owner
 **Error `400 Bad Request`:** Order is not in `ABERTO` status
 
 ---
 
-#### `PATCH /pedidos/{id}/recusar` — Decline Order
+#### `PATCH /pedidos/{id}/recusar` - Decline Order
 
 **Auth required:** Yes (must be the business owner)
 
-**Response `200 OK`:** Order with status `RECUSADO`
+**Response:** `204 No Content`
 
 ---
 
-#### `PATCH /pedidos/{id}/concluir` — Complete Order
+#### `PATCH /pedidos/{id}/concluir` - Complete Order
 
 **Auth required:** Yes (must be the business owner)
 
-**Response `200 OK`:** Order with status `CONCLUIDO`
+**Response:** `204 No Content`
 
 **Error `400 Bad Request`:** Order is not in `ACEITO` status
 
-> **Business rule:** Cannot complete an order that was not accepted first. The flow is strictly: ABERTO → ACEITO → CONCLUIDO.
+> **Business rule:** Cannot complete an order that was not accepted first. The flow is strictly: ABERTO -> ACEITO -> CONCLUIDO.
 
 ---
 
-#### `PATCH /pedidos/{id}/cancelar` — Cancel Order
+#### `PATCH /pedidos/{id}/cancelar` - Cancel Order
 
-**Auth required:** Yes (must be the client)
+**Auth required:** Yes (client or provider)
 
-**Response `200 OK`:** Order with status `CANCELADO`
-
-**Error `403 Forbidden`:** Only the client can cancel. If the provider tries to cancel, returns `4xx Client Error`.
-
-> **Business rule:** Only the CLIENT who created the order can cancel it. The provider CANNOT cancel — they can only decline (recusar).
+**Response:** `204 No Content`
 
 ---
 
 ### 4.5 Reviews (Avaliacoes)
 
-#### `POST /avaliacoes` — Create Review
+#### `POST /avaliacoes/pedido/{pedidoId}` - Create Review
 
 **Auth required:** Yes (must be the client of the order)
 
 **Request:**
 ```json
 {
-  "pedidoId": 1,
   "nota": 5,
   "comentario": "Excelente serviço, recomendo!"
 }
 ```
 
-**Response `201 Created`:**
+**Response `200 OK`:**
 ```json
 {
   "id": 1,
   "nota": 5,
   "comentario": "Excelente serviço, recomendo!",
-  "criadoEm": "2026-02-06T16:00:00",
-  "cliente": { "id": 2, "nomeCompleto": "João Silva" },
-  "negocio": { "id": 1, "nome": "Barbearia do Edson" }
+  "dataAvaliacao": "2026-02-15T16:00:00",
+  "pedidoId": 1,
+  "avaliadorNome": "Joao Silva",
+  "avaliadoNome": "Edson Neto",
+  "negocioId": 1,
+  "negocioNome": "Barbearia do Edson"
 }
 ```
 
 **Validation rules:**
-- `nota`: integer, 1-5
+- `nota`: required, integer 1-5
+- `comentario`: optional, max 500 chars
 - `pedidoId`: must be a `CONCLUIDO` order
 - Only one review per order
 - Only the client can review
-
-**Error `400 Bad Request`:**
-```json
-{
-  "error": "Pedido já foi avaliado"
-}
-```
 
 > **Side effect:** After creating a review, the business's `notaMedia` and `totalAvaliacoes` are automatically recalculated.
 
 ---
 
-#### `GET /avaliacoes/negocio/{negocioId}` — List Reviews for a Business
-
-**Auth required:** No
-
-**Response `200 OK`:**
-```json
-[
-  {
-    "id": 1,
-    "nota": 5,
-    "comentario": "Excelente serviço!",
-    "criadoEm": "2026-02-06T16:00:00",
-    "cliente": { "id": 2, "nomeCompleto": "João Silva" }
-  }
-]
-```
-
----
-
 ### 4.6 Chat (Messages)
 
-#### `GET /pedidos/{pedidoId}/mensagens` — Load Chat History
+#### `GET /pedidos/{pedidoId}/mensagens` - Load Chat History
 
 **Auth required:** Yes (must be client or business owner of the order)
 
@@ -573,17 +607,14 @@ FOTOGRAFO, PROFESSOR_PARTICULAR, VETERINARIO, OUTROS
 [
   {
     "id": 1,
-    "conteudo": "Olá, gostaria de agendar para sábado",
+    "pedidoServicoId": 1,
     "remetenteId": 2,
-    "pedidoId": 1,
-    "criadoEm": "2026-02-06T14:35:00"
-  },
-  {
-    "id": 2,
-    "conteudo": "Claro! Sábado às 10h pode ser?",
-    "remetenteId": 1,
-    "pedidoId": 1,
-    "criadoEm": "2026-02-06T14:36:00"
+    "remetenteNome": "Joao Silva",
+    "conteudo": "Ola, gostaria de agendar para sabado",
+    "enviadoEm": "2026-02-15T14:35:00",
+    "lida": true,
+    "lidaEm": "2026-02-15T14:36:00",
+    "remetenteFotoUrl": "https://example.com/foto.jpg"
   }
 ]
 ```
@@ -594,31 +625,52 @@ FOTOGRAFO, PROFESSOR_PARTICULAR, VETERINARIO, OUTROS
 
 ---
 
+#### `POST /pedidos/{pedidoId}/mensagens` - Send Message via REST
+
+**Auth required:** Yes
+
+**Request:**
+```json
+{
+  "conteudo": "Ola, gostaria de agendar!"
+}
+```
+
+**Response `200 OK`:** Same structure as chat history item
+
+---
+
+#### `POST /pedidos/{pedidoId}/mensagens/lidas` - Mark Messages as Read
+
+**Auth required:** Yes
+
+**Response:** `204 No Content`
+
+---
+
 ## 5. WebSocket - Real-Time Chat
 
 ### 5.1 Architecture
 
 ```
-┌────────────┐    STOMP/SockJS    ┌─────────────┐
-│  App        │ ◄───────────────► │  Backend     │
-│  (Client)   │    /ws-chat       │  (Broker)    │
-└──────┬─────┘                    └──────┬──────┘
-       │                                  │
-       │  SUBSCRIBE                       │
-       │  /topic/mensagens/{pedidoId}     │
-       │─────────────────────────────────>│
-       │                                  │
-       │  SEND                            │
-       │  /app/chat.enviar                │
-       │  { pedidoId, conteudo }          │
-       │─────────────────────────────────>│
-       │                                  │ 1. Validate JWT
-       │                                  │ 2. Extract userId
-       │                                  │ 3. Save to DB
-       │  MESSAGE                         │ 4. Broadcast
-       │  /topic/mensagens/{pedidoId}     │
-       │  { id, conteudo, remetenteId }   │
-       │<─────────────────────────────────│
+[App (Client)]     STOMP/SockJS     [Backend (Broker)]
+      |           /ws-chat                |
+      |                                   |
+      | SUBSCRIBE                         |
+      | /topic/mensagens/{pedidoId}       |
+      |---------------------------------->|
+      |                                   |
+      | SEND                              |
+      | /app/chat/{pedidoId}              |
+      | { conteudo }                      |
+      |---------------------------------->|
+      |                                   | 1. Validate JWT
+      |                                   | 2. Extract userId
+      |                                   | 3. Save to DB
+      | MESSAGE                           | 4. Broadcast
+      | /topic/mensagens/{pedidoId}       |
+      | { id, conteudo, remetenteId }     |
+      |<----------------------------------|
 ```
 
 ### 5.2 Connection
@@ -634,7 +686,7 @@ FOTOGRAFO, PROFESSOR_PARTICULAR, VETERINARIO, OUTROS
 ```
 1. CONNECT with JWT header
 2. SUBSCRIBE to /topic/mensagens/{pedidoId}
-3. SEND messages to /app/chat.enviar
+3. SEND messages to /app/chat/{pedidoId}
 4. RECEIVE messages from subscription
 5. DISCONNECT when leaving chat screen
 ```
@@ -663,10 +715,10 @@ destination:/topic/mensagens/1
 **Send message:**
 ```
 SEND
-destination:/app/chat.enviar
+destination:/app/chat/1
 content-type:application/json
 
-{"pedidoId":1,"conteudo":"Olá!"}
+{"conteudo":"Ola!"}
 \0
 ```
 
@@ -676,7 +728,7 @@ MESSAGE
 destination:/topic/mensagens/1
 content-type:application/json
 
-{"id":45,"conteudo":"Olá!","remetenteId":2,"pedidoId":1,"criadoEm":"2026-02-06T14:35:00"}
+{"id":45,"pedidoServicoId":1,"remetenteId":2,"remetenteNome":"Joao","conteudo":"Ola!","enviadoEm":"2026-02-15T14:35:00","lida":false,"lidaEm":null,"remetenteFotoUrl":null}
 ```
 
 ### 5.5 Additional Real-Time Features
@@ -684,30 +736,28 @@ content-type:application/json
 **Typing indicator:**
 ```
 SEND
-destination:/app/chat.digitando
+destination:/app/chat/1/digitando
 content-type:application/json
 
-{"pedidoId":1}
+{"usuarioId":7,"usuarioNome":"Cliente","digitando":true}
 ```
 
-Subscribe: `/topic/digitando/{pedidoId}`
+Subscribe: `/topic/mensagens/{pedidoId}/digitando`
 
 **Read confirmation:**
 ```
 SEND
-destination:/app/chat.leitura
-content-type:application/json
-
-{"pedidoId":1}
+destination:/app/chat/1/lida/45
 ```
 
-Subscribe: `/topic/leitura/{pedidoId}`
+Subscribe: `/topic/mensagens/{pedidoId}/lida`
+Also emits to: `/topic/mensagens/{pedidoId}/ultimo-visto`
 
 ### 5.6 Security
 
 - JWT is validated during the WebSocket handshake (CONNECT frame)
-- If the token is invalid or expired, the connection is rejected with `403 Forbidden`
-- The sender ID (`remetenteId`) is ALWAYS extracted from the token — never from the request body
+- If the token is invalid or expired, the connection is rejected
+- The sender ID (`remetenteId`) is ALWAYS extracted from the token - never from the request body
 - This prevents spoofing (a user cannot send messages as another user)
 
 ---
@@ -720,7 +770,10 @@ All errors follow this format:
 
 ```json
 {
-  "error": "Human-readable error message in Portuguese"
+  "timestamp": "2026-02-15T10:00:00",
+  "status": 400,
+  "error": "Erro de Regra de Negocio",
+  "message": "Mensagem legivel em portugues"
 }
 ```
 
@@ -728,25 +781,26 @@ All errors follow this format:
 
 | Code | Meaning | When |
 |------|---------|------|
-| `200` | OK | Successful GET, PATCH |
-| `201` | Created | Successful POST (new resource) |
+| `200` | OK | Successful GET, POST, PATCH |
+| `204` | No Content | Successful operation with no response body |
 | `400` | Bad Request | Validation error, business rule violation |
-| `401` | Unauthorized | Missing/expired token |
+| `401` | Unauthorized | Missing/expired/invalid token |
 | `403` | Forbidden | Valid token but no permission (IDOR) |
 | `404` | Not Found | Resource doesn't exist |
+| `429` | Too Many Requests | Rate limit exceeded (10 req/min on login/register) |
 | `500` | Internal Error | Unexpected server error |
 
 ### 6.3 Common Error Messages
 
 | Error | Cause | Frontend Action |
 |-------|-------|-----------------|
-| `"Credenciais inválidas"` | Wrong email/password | Show error on login form |
-| `"Email já cadastrado"` | Duplicate email | Show error on register form |
-| `"Negócio não encontrado"` | Invalid business ID | Show "not found" screen |
-| `"Pedido não encontrado"` | Invalid order ID | Navigate back |
-| `"Pedido já foi avaliado"` | Duplicate review | Disable review button |
+| `"Credenciais invalidas"` | Wrong email/password | Show error on login form |
+| `"Email ja cadastrado"` | Duplicate email | Show error on register form |
+| `"Negocio nao encontrado"` | Invalid business ID | Show "not found" screen |
+| `"Pedido nao encontrado"` | Invalid order ID | Navigate back |
+| `"Pedido ja foi avaliado"` | Duplicate review | Disable review button |
 | `"Apenas o cliente pode cancelar"` | Provider tried to cancel | Hide cancel button for providers |
-| `"Pedido não está ABERTO"` | Invalid status transition | Refresh order status |
+| `"Pedido nao esta ABERTO"` | Invalid status transition | Refresh order status |
 | `"Acesso negado"` | IDOR attempt | Navigate back, show error toast |
 
 ### 6.4 Recommended Error Handling in Kotlin
@@ -764,19 +818,19 @@ suspend fun <T> safeApiCall(call: suspend () -> T): ApiResult<T> {
     } catch (e: ClientRequestException) {
         when (e.response.status.value) {
             401 -> {
-                // Token expired → redirect to login
                 TokenManager.clear()
-                ApiResult.Error(401, "Sessão expirada")
+                ApiResult.Error(401, "Sessao expirada")
             }
             403 -> ApiResult.Error(403, "Acesso negado")
+            429 -> ApiResult.Error(429, "Muitas tentativas. Aguarde 1 minuto.")
             else -> {
                 val body = e.response.bodyAsText()
-                val msg = Json.decodeFromString<ErrorResponse>(body).error
+                val msg = Json.decodeFromString<ApiErrorResponse>(body).message
                 ApiResult.Error(e.response.status.value, msg)
             }
         }
     } catch (e: Exception) {
-        ApiResult.Error(0, "Erro de conexão")
+        ApiResult.Error(0, "Erro de conexao")
     }
 }
 ```
@@ -785,144 +839,158 @@ suspend fun <T> safeApiCall(call: suspend () -> T): ApiResult<T> {
 
 ## 7. Screen-to-Endpoint Mapping
 
-This maps every app screen to the exact API calls needed.
-
 ### 7.1 Splash / App Init
 
 ```
 App opens
-  └─► Check if token exists in local storage
-       ├─► YES → GET /usuarios/me
-       │         ├─► 200 → Navigate to Home
-       │         └─► 401 → Navigate to Login
-       └─► NO  → Navigate to Login
+  |-> Check if token exists in local storage
+       |-> YES -> GET /usuarios/me
+       |           |-> 200 -> Navigate to Home
+       |           |-> 401 -> Navigate to Login
+       |-> NO  -> Navigate to Login
 ```
 
 ### 7.2 Login Screen
 
 ```
 User taps "Entrar"
-  └─► POST /auth/login { email, senha }
-       ├─► 200 → Store token → GET /usuarios/me → Navigate to Home
-       └─► 400 → Show "Credenciais inválidas"
+  |-> POST /auth/login { email, senha }
+       |-> 200 -> Store token -> GET /usuarios/me -> Navigate to Home
+       |-> 401 -> Show "Credenciais invalidas"
+       |-> 429 -> Show "Muitas tentativas. Aguarde 1 minuto."
+
+User taps "Esqueci minha senha"
+  |-> Navigate to Forgot Password Screen
 ```
 
 ### 7.3 Register Screen
 
 ```
 User taps "Cadastrar"
-  └─► POST /auth/cadastro { nomeCompleto, email, senha }
-       ├─► 201 → POST /auth/login (auto-login) → Navigate to Home
-       └─► 400 → Show "Email já cadastrado"
+  |-> POST /usuarios { nomeCompleto, email, senha }
+       |-> 200 -> POST /auth/login (auto-login) -> Navigate to Home
+       |-> 400 -> Show "Email ja cadastrado"
+       |-> 429 -> Show "Muitas tentativas. Aguarde 1 minuto."
 ```
 
-### 7.4 Home Screen (Search)
+### 7.4 Forgot Password Screen
+
+```
+User enters email and taps "Enviar codigo"
+  |-> POST /auth/esqueci-senha { email }
+       |-> 200 -> Navigate to Reset Password Screen
+       |-> Show message: "Se o email estiver cadastrado..."
+
+User enters code + new password and taps "Redefinir"
+  |-> POST /auth/redefinir-senha { token, novaSenha }
+       |-> 200 -> Show success -> Navigate to Login
+       |-> 400 -> Show "Codigo invalido ou expirado"
+```
+
+### 7.5 Home Screen (Search)
 
 ```
 Screen loads
-  └─► Request GPS permission
-       └─► GET /negocios/busca?latitude={lat}&longitude={lng}
-            └─► Render list of businesses sorted by distance + rating
+  |-> Request GPS permission
+       |-> GET /negocios/busca?lat={lat}&lon={lon}
+            |-> Render list of businesses sorted by rating
 
 User types in search bar
-  └─► GET /negocios/busca?nome={query}&latitude={lat}&longitude={lng}
-
-User selects category filter
-  └─► GET /negocios/busca?categoria={BARBEARIA}&latitude={lat}&longitude={lng}
+  |-> GET /negocios/busca?busca={query}&lat={lat}&lon={lon}
 ```
 
-### 7.5 Business Detail Screen
+### 7.6 Business Detail Screen
 
 ```
 User taps a business card
-  └─► GET /negocios/{id}
-       └─► Render business details (name, description, rating, reviews)
+  |-> Render business details from list data (no extra API call needed)
 
-Load reviews section
-  └─► GET /avaliacoes/negocio/{id}
-       └─► Render review cards
-
-User taps "Solicitar Serviço"
-  └─► POST /pedidos { negocioId, descricao }
-       ├─► 201 → Navigate to Chat Screen (with pedidoId)
-       └─► 400 → Show error
+User taps "Solicitar Servico"
+  |-> POST /pedidos { negocioId, descricao }
+       |-> 200 -> Navigate to Chat Screen (with pedidoId)
+       |-> 400 -> Show error
 ```
 
-### 7.6 My Orders Screen
+### 7.7 My Orders Screen
 
 ```
 Screen loads
-  └─► GET /pedidos/meus
-       └─► Render order cards grouped by status
+  |-> GET /pedidos?page=0&size=20
+       |-> Render order cards grouped by status
+
+Load more (infinite scroll)
+  |-> GET /pedidos?page={nextPage}&size=20
 
 Order card shows:
-  - Business name + logo
+  - Business name
   - Description
   - Status badge (color-coded)
   - Created date
 
 User taps an order
-  └─► Navigate to Chat Screen (with pedidoId)
+  |-> Navigate to Chat Screen (with pedidoId)
 ```
 
-### 7.7 Chat Screen
+### 7.8 Chat Screen
 
 ```
 Screen loads
-  ├─► GET /pedidos/{pedidoId}/mensagens  (load history)
-  └─► CONNECT WebSocket /ws-chat (with JWT)
-       └─► SUBSCRIBE /topic/mensagens/{pedidoId}
+  |-> GET /pedidos/{pedidoId}/mensagens  (load history)
+  |-> CONNECT WebSocket /ws-chat (with JWT)
+       |-> SUBSCRIBE /topic/mensagens/{pedidoId}
 
 User sends message
-  └─► SEND /app/chat.enviar { pedidoId, conteudo }
+  |-> SEND /app/chat/{pedidoId} { conteudo }
 
 User typing
-  └─► SEND /app/chat.digitando { pedidoId }
+  |-> SEND /app/chat/{pedidoId}/digitando { usuarioId, usuarioNome, digitando }
 
 Receive message (real-time)
-  └─► MESSAGE from /topic/mensagens/{pedidoId}
-       └─► Append to message list, scroll to bottom
+  |-> MESSAGE from /topic/mensagens/{pedidoId}
+       |-> Append to message list, scroll to bottom
 
 Screen closes
-  └─► DISCONNECT WebSocket
+  |-> DISCONNECT WebSocket
 ```
 
-### 7.8 Provider Actions (Order Management)
+### 7.9 Provider Actions (Order Management)
 
 ```
 Provider sees new order (status: ABERTO)
-  ├─► "Aceitar"  → PATCH /pedidos/{id}/aceitar
-  └─► "Recusar"  → PATCH /pedidos/{id}/recusar
+  |-> "Aceitar"  -> PATCH /pedidos/{id}/aceitar
+  |-> "Recusar"  -> PATCH /pedidos/{id}/recusar
 
 Provider finishes service (status: ACEITO)
-  └─► "Concluir" → PATCH /pedidos/{id}/concluir
+  |-> "Concluir" -> PATCH /pedidos/{id}/concluir
+
+Client sees order (status: ABERTO)
+  |-> "Cancelar" -> PATCH /pedidos/{id}/cancelar
 
 Client sees completed order (status: CONCLUIDO)
-  └─► "Cancelar" → PATCH /pedidos/{id}/cancelar  (only if ABERTO)
-  └─► "Avaliar"  → Navigate to Review Screen
+  |-> "Avaliar"  -> Navigate to Review Screen
 ```
 
-### 7.9 Review Screen
+### 7.10 Review Screen
 
 ```
 User submits review
-  └─► POST /avaliacoes { pedidoId, nota, comentario }
-       ├─► 201 → Show success → Navigate back
-       └─► 400 → Show "Pedido já foi avaliado"
+  |-> POST /avaliacoes/pedido/{pedidoId} { nota, comentario }
+       |-> 200 -> Show success -> Navigate back
+       |-> 400 -> Show "Pedido ja foi avaliado"
 ```
 
-### 7.10 Profile / My Business Screen
+### 7.11 Profile / My Business Screen
 
 ```
 Screen loads
-  └─► GET /usuarios/me
-       └─► Render user info
+  |-> GET /usuarios/me
+       |-> Render user info
 
-If user is a provider
-  └─► Load their business details
+Update profile photo
+  |-> PATCH /usuarios/me/foto { url }
 
-Update logo
-  └─► PATCH /negocios/{id}/logo { logoUrl }
+Update business logo
+  |-> PATCH /negocios/{id}/logo { url }
 ```
 
 ---
@@ -966,7 +1034,7 @@ object HttpClientFactory {
             // Default headers
             defaultRequest {
                 contentType(ContentType.Application.Json)
-                url("http://10.0.2.2:8080") // Android emulator → localhost
+                url("http://10.0.2.2:8080") // Android emulator -> localhost
                 // url("http://localhost:8080") // iOS simulator
                 // url("https://api.easybiz.com.br") // Production
 
@@ -1033,9 +1101,21 @@ class AuthApi(private val client: HttpClient) {
         }.body()
     }
 
-    suspend fun cadastro(nome: String, email: String, senha: String): UserResponse {
-        return client.post("/auth/cadastro") {
-            setBody(CadastroRequest(nome, email, senha))
+    suspend fun register(nome: String, email: String, senha: String): UserResponse {
+        return client.post("/usuarios") {
+            setBody(RegisterRequest(nome, email, senha))
+        }.body()
+    }
+
+    suspend fun esqueciSenha(email: String): MessageResponse {
+        return client.post("/auth/esqueci-senha") {
+            setBody(EsqueciSenhaRequest(email))
+        }.body()
+    }
+
+    suspend fun redefinirSenha(token: String, novaSenha: String): MessageResponse {
+        return client.post("/auth/redefinir-senha") {
+            setBody(RedefinirSenhaRequest(token, novaSenha))
         }.body()
     }
 
@@ -1050,61 +1130,43 @@ class AuthApi(private val client: HttpClient) {
 ```kotlin
 // core/networking/WebSocketManager.kt
 
-import io.ktor.client.*
-import io.ktor.client.plugins.websocket.*
-import io.ktor.websocket.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import kotlinx.serialization.json.Json
+// Recommended library for STOMP in KMP: Krossbow
+// https://github.com/joffrey-bion/krossbow
 
 class ChatWebSocketManager(
     private val tokenProvider: () -> String?
 ) {
-    private var session: WebSocketSession? = null
-    private val _messages = MutableSharedFlow<MensagemResponse>()
-    val messages: SharedFlow<MensagemResponse> = _messages
-
-    private val client = HttpClient {
-        install(WebSockets)
-    }
-
-    suspend fun connect(pedidoId: Long) {
-        val token = tokenProvider() ?: throw IllegalStateException("No token")
-
-        // Connect with STOMP over SockJS
-        // Note: For KMP, consider using a STOMP library like:
-        // - krossbow (https://github.com/joffrey-bion/krossbow)
-        // - Or implement raw WebSocket with STOMP frame parsing
-
-        // Using krossbow (recommended for KMP):
-        // val stompClient = StompClient(WebSocketClient.builtIn())
-        // val stompSession = stompClient.connect(
-        //     "ws://10.0.2.2:8080/ws-chat",
-        //     customStompConnectHeaders = mapOf("Authorization" to "Bearer $token")
-        // )
-        //
-        // val subscription = stompSession.subscribe("/topic/mensagens/$pedidoId")
-        // subscription.collect { frame ->
-        //     val message = Json.decodeFromString<MensagemResponse>(frame.bodyAsText)
-        //     _messages.emit(message)
-        // }
-    }
-
-    suspend fun sendMessage(pedidoId: Long, conteudo: String) {
-        // stompSession.send("/app/chat.enviar", """{"pedidoId":$pedidoId,"conteudo":"$conteudo"}""")
-    }
-
-    suspend fun sendTyping(pedidoId: Long) {
-        // stompSession.send("/app/chat.digitando", """{"pedidoId":$pedidoId}""")
-    }
-
-    fun disconnect() {
-        // stompSession.disconnect()
-    }
+    // Using krossbow:
+    // val stompClient = StompClient(WebSocketClient.builtIn())
+    //
+    // suspend fun connect(pedidoId: Long) {
+    //     val token = tokenProvider() ?: throw IllegalStateException("No token")
+    //     val session = stompClient.connect(
+    //         "ws://10.0.2.2:8080/ws-chat",
+    //         customStompConnectHeaders = mapOf("Authorization" to "Bearer $token")
+    //     )
+    //
+    //     // Subscribe to messages
+    //     session.subscribe("/topic/mensagens/$pedidoId").collect { frame ->
+    //         val message = Json.decodeFromString<MensagemResponse>(frame.bodyAsText)
+    //         // Handle message
+    //     }
+    // }
+    //
+    // suspend fun sendMessage(pedidoId: Long, conteudo: String) {
+    //     session.send("/app/chat/$pedidoId", """{"conteudo":"$conteudo"}""")
+    // }
+    //
+    // suspend fun sendTyping(pedidoId: Long, userId: Long, userName: String) {
+    //     session.send("/app/chat/$pedidoId/digitando",
+    //         """{"usuarioId":$userId,"usuarioNome":"$userName","digitando":true}""")
+    // }
+    //
+    // fun disconnect() {
+    //     session.disconnect()
+    // }
 }
 ```
-
-> **Recommended library for STOMP in KMP:** [Krossbow](https://github.com/joffrey-bion/krossbow) — handles STOMP frames, heartbeats, and reconnection out of the box.
 
 ### 8.5 Koin DI Module
 
@@ -1134,30 +1196,28 @@ val networkModule = module {
 data class LoginRequest(val email: String, val senha: String)
 
 @Serializable
-data class CadastroRequest(val nomeCompleto: String, val email: String, val senha: String)
+data class RegisterRequest(val nomeCompleto: String, val email: String, val senha: String)
 
 @Serializable
-data class CriarNegocioRequest(
-    val nome: String,
-    val descricao: String,
-    val categoria: String,
-    val endereco: String,
-    val latitude: Double,
-    val longitude: Double,
-    val telefone: String
-)
+data class EsqueciSenhaRequest(val email: String)
+
+@Serializable
+data class RedefinirSenhaRequest(val token: String, val novaSenha: String)
+
+@Serializable
+data class CriarNegocioRequest(val nome: String, val categoria: String)
 
 @Serializable
 data class CriarPedidoRequest(val negocioId: Long, val descricao: String)
 
 @Serializable
-data class CriarAvaliacaoRequest(val pedidoId: Long, val nota: Int, val comentario: String)
+data class CriarAvaliacaoRequest(val nota: Int, val comentario: String? = null)
 
 @Serializable
-data class AtualizarLogoRequest(val logoUrl: String)
+data class AtualizarFotoRequest(val url: String)
 
 @Serializable
-data class EnviarMensagemRequest(val pedidoId: Long, val conteudo: String)
+data class EnviarMensagemRequest(val conteudo: String)
 ```
 
 ### 9.2 Response Models
@@ -1167,65 +1227,85 @@ data class EnviarMensagemRequest(val pedidoId: Long, val conteudo: String)
 data class TokenResponse(val token: String)
 
 @Serializable
-data class ErrorResponse(val error: String)
+data class MessageResponse(val mensagem: String)
+
+@Serializable
+data class ApiErrorResponse(
+    val timestamp: String,
+    val status: Int,
+    val error: String,
+    val message: String
+)
 
 @Serializable
 data class UserResponse(
     val id: Long,
-    val nomeCompleto: String,
+    val nome: String,
     val email: String,
     val fotoUrl: String? = null
 )
 
 @Serializable
-data class DonoResponse(val id: Long, val nomeCompleto: String)
-
-@Serializable
 data class NegocioResponse(
     val id: Long,
     val nome: String,
-    val descricao: String,
     val categoria: String,
-    val endereco: String? = null,
+    val usuarioId: Long,
+    val nomeUsuario: String,
+    val ativo: Boolean,
     val latitude: Double? = null,
     val longitude: Double? = null,
-    val telefone: String? = null,
-    val logoUrl: String? = null,
+    val enderecoCompleto: String? = null,
     val notaMedia: Double = 0.0,
-    val totalAvaliacoes: Int = 0,
-    val distanciaKm: Double? = null,
-    val dono: DonoResponse? = null
+    val logoUrl: String? = null
 )
 
 @Serializable
 data class PedidoResponse(
     val id: Long,
+    val clienteId: Long,
+    val clienteNome: String,
+    val negocioId: Long,
+    val negocioNome: String,
     val descricao: String,
+    val dataDesejada: String? = null,
     val status: String,  // ABERTO, ACEITO, RECUSADO, CONCLUIDO, CANCELADO
-    val criadoEm: String,
-    val cliente: DonoResponse,
-    val negocio: NegocioSimplificadoResponse
+    val criadoEm: String
 )
 
 @Serializable
-data class NegocioSimplificadoResponse(val id: Long, val nome: String)
+data class PageResponse<T>(
+    val content: List<T>,
+    val totalElements: Long,
+    val totalPages: Int,
+    val size: Int,
+    val number: Int
+)
 
 @Serializable
 data class AvaliacaoResponse(
     val id: Long,
     val nota: Int,
-    val comentario: String,
-    val criadoEm: String,
-    val cliente: DonoResponse
+    val comentario: String? = null,
+    val dataAvaliacao: String,
+    val pedidoId: Long,
+    val avaliadorNome: String,
+    val avaliadoNome: String,
+    val negocioId: Long,
+    val negocioNome: String
 )
 
 @Serializable
 data class MensagemResponse(
     val id: Long,
-    val conteudo: String,
+    val pedidoServicoId: Long,
     val remetenteId: Long,
-    val pedidoId: Long,
-    val criadoEm: String
+    val remetenteNome: String,
+    val conteudo: String,
+    val enviadoEm: String,
+    val lida: Boolean,
+    val lidaEm: String? = null,
+    val remetenteFotoUrl: String? = null
 )
 ```
 
@@ -1236,44 +1316,43 @@ data class MensagemResponse(
 ### 10.1 Order State Machine
 
 ```
-                    ┌──────────────┐
-                    │   ABERTO     │  ← Client creates order
-                    └──────┬───────┘
-                           │
-              ┌────────────┼────────────┐
-              │            │            │
-              ▼            ▼            ▼
-      ┌───────────┐ ┌───────────┐ ┌──────────┐
-      │  ACEITO   │ │ RECUSADO  │ │CANCELADO │
-      │(provider) │ │(provider) │ │(client)  │
-      └─────┬─────┘ └───────────┘ └──────────┘
-            │
-            ▼
-      ┌───────────┐
-      │ CONCLUIDO │  ← Provider marks as done
-      │(provider) │
-      └─────┬─────┘
-            │
-            ▼
-      ┌───────────┐
-      │ AVALIADO  │  ← Client leaves review
-      │(client)   │
-      └───────────┘
+                    +--------------+
+                    |   ABERTO     |  <- Client creates order
+                    +------+-------+
+                           |
+              +------------+------------+
+              |            |            |
+              v            v            v
+      +-----------+ +-----------+ +----------+
+      |  ACEITO   | | RECUSADO  | |CANCELADO |
+      |(provider) | |(provider) | |(client)  |
+      +-----+-----+ +-----------+ +----------+
+            |
+            v
+      +-----------+
+      | CONCLUIDO |  <- Provider marks as done
+      |(provider) |
+      +-----+-----+
+            |
+            v
+      +-----------+
+      | AVALIADO  |  <- Client leaves review
+      |(client)   |
+      +-----------+
 ```
 
 ### 10.2 Permission Matrix
 
 | Action | Client | Provider (Business Owner) |
 |--------|--------|---------------------------|
-| Create order | ✅ | ❌ |
-| Accept order | ❌ | ✅ |
-| Decline order | ❌ | ✅ |
-| Complete order | ❌ | ✅ |
-| Cancel order | ✅ | ❌ |
-| Send message | ✅ | ✅ |
-| View chat history | ✅ | ✅ |
-| Create review | ✅ | ❌ |
-| View reviews | ✅ | ✅ |
+| Create order | Yes | No |
+| Accept order | No | Yes |
+| Decline order | No | Yes |
+| Complete order | No | Yes |
+| Cancel order | Yes | No |
+| Send message | Yes | Yes |
+| View chat history | Yes | Yes |
+| Create review | Yes | No |
 
 ### 10.3 Valid State Transitions
 
@@ -1291,7 +1370,7 @@ enum class OrderStatus(val label: String, val color: Color) {
     ABERTO("Aguardando", Color(0xFFFFA726)),      // Orange
     ACEITO("Em andamento", Color(0xFF42A5F5)),     // Blue
     RECUSADO("Recusado", Color(0xFFEF5350)),       // Red
-    CONCLUIDO("Concluído", Color(0xFF66BB6A)),     // Green
+    CONCLUIDO("Concluido", Color(0xFF66BB6A)),     // Green
     CANCELADO("Cancelado", Color(0xFF9E9E9E))      // Gray
 }
 ```
@@ -1305,31 +1384,31 @@ enum class OrderStatus(val label: String, val color: Color) {
 Before each PR, verify these flows work end-to-end:
 
 **Auth:**
-- [ ] Register new user → auto-login → see home
-- [ ] Login with valid credentials → see home
-- [ ] Login with wrong password → see error message
-- [ ] Register with duplicate email → see error message
-- [ ] Access protected route without token → redirect to login
+- [ ] Register new user -> auto-login -> see home
+- [ ] Login with valid credentials -> see home
+- [ ] Login with wrong password -> see error message
+- [ ] Register with duplicate email -> see error message
+- [ ] Access protected route without token -> redirect to login
+- [ ] Forgot password -> receive code -> reset password -> login
 
 **Businesses:**
-- [ ] Home screen loads business list
+- [ ] Home screen loads business list (with GPS)
 - [ ] Search by name returns filtered results
-- [ ] Search with GPS returns sorted by distance
-- [ ] Category filter works
 - [ ] Business detail screen loads correctly
 
 **Orders:**
-- [ ] Client creates order → status ABERTO
-- [ ] Provider accepts → status ACEITO
-- [ ] Provider completes → status CONCLUIDO
-- [ ] Client cancels ABERTO order → status CANCELADO
+- [ ] Client creates order -> status ABERTO
+- [ ] Provider accepts -> status ACEITO
+- [ ] Provider completes -> status CONCLUIDO
+- [ ] Client cancels ABERTO order -> status CANCELADO
 - [ ] Provider CANNOT cancel (button hidden or disabled)
 - [ ] Provider CANNOT complete ABERTO order (only ACEITO)
+- [ ] Pagination works on orders list
 
 **Chat:**
 - [ ] Chat history loads when entering screen
 - [ ] WebSocket connects successfully
-- [ ] Send message → appears in real-time for both users
+- [ ] Send message -> appears in real-time for both users
 - [ ] Typing indicator works
 - [ ] Disconnect when leaving screen
 
@@ -1337,7 +1416,6 @@ Before each PR, verify these flows work end-to-end:
 - [ ] Client can review CONCLUIDO order
 - [ ] Cannot review same order twice
 - [ ] Rating updates business `notaMedia`
-- [ ] Review appears on business detail screen
 
 ---
 
@@ -1345,12 +1423,11 @@ Before each PR, verify these flows work end-to-end:
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0.0 | 2026-02-06 | Initial release — complete V1 API documentation |
+| 1.1.0 | 2026-02-15 | Fix endpoints, add password recovery, update DTOs, add pagination |
+| 1.0.0 | 2026-02-06 | Initial release - complete V1 API documentation |
 
 ---
 
 **Questions?** Contact Natanael Lopes (Backend) or open an issue on the repo.
 
 **Swagger UI:** `http://localhost:8080/swagger-ui/index.html`
-
-**Postman Collection:** (TODO: export and add link)
