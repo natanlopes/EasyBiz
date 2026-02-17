@@ -3,7 +3,7 @@ package br.com.easybiz.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import br.com.easybiz.exception.ForbiddenException;
 import br.com.easybiz.exception.ResourceNotFoundException;
 import br.com.easybiz.model.Negocio;
@@ -22,7 +22,7 @@ public class NegocioService {
         this.negocioRepository = negocioRepository;
         this.usuarioRepository = usuarioRepository;
     }
-
+    @Transactional
     public Negocio criarNegocio(Long usuarioId, String nome, String categoria) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario nao encontrado"));
@@ -65,7 +65,7 @@ public class NegocioService {
 
         return termo;
     }
-
+    @Transactional
     public void atualizarLogo(Long negocioId, Long usuarioLogadoId, String novaUrl) {
         Negocio negocio = negocioRepository.findById(negocioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio nao encontrado"));

@@ -2,6 +2,8 @@ package br.com.easybiz.controller;
 
 import java.security.Principal;
 
+import br.com.easybiz.dto.UsuarioPerfilPublicoDTO;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -41,20 +43,21 @@ public class UsuarioController {
 
     @Operation(summary = "Cadastrar Usuário", description = "Cria uma conta nova.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Usuário criado com sucesso"),
+            @ApiResponse(responseCode = "201", description = "Usuário criado com sucesso"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos")
     })
     @PostMapping
     public ResponseEntity<UsuarioResponseDTO> criar(@RequestBody @Valid CriarUsuarioDTO dto) {
         Usuario novoUsuario = service.criarUsuario(dto);
 
-        return ResponseEntity.ok(new UsuarioResponseDTO(
+        return ResponseEntity.status(HttpStatus.CREATED).body(new UsuarioResponseDTO(
                 novoUsuario.getId(),
                 novoUsuario.getNomeCompleto(),
                 novoUsuario.getEmail(),
                 novoUsuario.getFotoUrl()
         ));
     }
+
 
     @Operation(summary = "Meus Dados", description = "Retorna dados do usuário logado baseados no Token.")
     @GetMapping("/me")
@@ -74,12 +77,11 @@ public class UsuarioController {
 
     @Operation(summary = "Perfil Público", description = "Busca nome e foto de outro usuário pelo ID.")
     @GetMapping("/{id}")
-    public ResponseEntity<UsuarioResponseDTO> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<UsuarioPerfilPublicoDTO> buscarPorId(@PathVariable Long id) {
         return usuarioRepository.findById(id)
-                .map(u -> ResponseEntity.ok(new UsuarioResponseDTO(
+                .map(u -> ResponseEntity.ok(new UsuarioPerfilPublicoDTO(
                         u.getId(),
                         u.getNomeCompleto(),
-                        u.getEmail(),
                         u.getFotoUrl()
                 )))
                 .orElse(ResponseEntity.notFound().build());

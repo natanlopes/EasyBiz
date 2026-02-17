@@ -1,7 +1,7 @@
 package br.com.easybiz.service;
 
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import br.com.easybiz.dto.CriarUsuarioDTO;
 import br.com.easybiz.exception.BusinessException;
 import br.com.easybiz.exception.ResourceNotFoundException;
@@ -19,7 +19,7 @@ public class UsuarioService {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
     }
-
+    @Transactional
     public Usuario criarUsuario(CriarUsuarioDTO dto) {
         if (repository.findByEmail(dto.email()).isPresent()) {
             throw new BusinessException("Email ja cadastrado");
@@ -32,7 +32,7 @@ public class UsuarioService {
 
         return repository.save(usuario);
     }
-
+    @Transactional
     public void atualizarFoto(Long usuarioId, String novaUrl) {
         Usuario usuario = repository.findById(usuarioId)
             .orElseThrow(() -> new ResourceNotFoundException("Usuario nao encontrado"));

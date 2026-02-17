@@ -2,7 +2,7 @@ package br.com.easybiz.controller;
 
 import java.security.Principal;
 import java.util.List;
-
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -50,7 +50,7 @@ public class NegocioController {
                 """
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Negócio criado com sucesso"),
+            @ApiResponse(responseCode = "201", description = "Negócio criado com sucesso"),
             @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
     })
     @PostMapping
@@ -62,7 +62,7 @@ public class NegocioController {
                 dto.nome(),
                 dto.categoria()
         );
-        return ResponseEntity.ok(NegocioResponseDTO.fromEntity(negocio));
+        return ResponseEntity.status(HttpStatus.CREATED).body(NegocioResponseDTO.fromEntity(negocio));
     }
 
     @GetMapping("/busca")
