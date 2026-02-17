@@ -578,14 +578,14 @@ Todos os erros retornam a estrutura padronizada:
 
 | Codigo | Quando |
 |--------|--------|
-| 200 | Sucesso (GET, POST, PATCH) |
+| 200 | Sucesso com corpo de resposta (GET e POST) |
 | 201 | Recurso criado |
-| 204 | Sucesso sem corpo (No Content) |
+| 204 | Sucesso sem corpo (No Content,comum em PATCH desta API)) |
 | 400 | Validacao ou regra de negocio |
 | 401 | Token ausente, invalido ou expirado |
 | 403 | Token valido mas sem permissao |
 | 404 | Recurso nao encontrado |
-| 429 | Rate limit excedido (max 10 req/min em login e cadastro) |
+| 429 | Rate limit excedido (max 10 req/min nos endpoints sensiveis) |
 | 500 | Erro interno do servidor |
 
 ---
@@ -595,6 +595,8 @@ Todos os erros retornam a estrutura padronizada:
 Endpoints com limite de requisicoes (10 por minuto por IP):
 - `POST /auth/login`
 - `POST /usuarios`
+- `POST /auth/esqueci-senha`
+- `POST /auth/redefinir-senha`
 
 **Response 429:**
 ```json
@@ -623,7 +625,7 @@ Endpoints com limite de requisicoes (10 por minuto por IP):
 - `GET /negocios/**`
 - `/ws-chat/**`
 - `/swagger-ui/**`
-- `/actuator/**`
+- `/actuator/health`
 
 ---
 
