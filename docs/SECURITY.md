@@ -73,7 +73,8 @@ O sistema utiliza **BCrypt** para hash de senhas, padrao recomendado pelo OWASP.
 
 ### Codigo de Referencia
 
-```java
+```
+java
 // SecurityConfig.java
 @Bean
 public PasswordEncoder passwordEncoder() {
@@ -114,7 +115,7 @@ Todas as requisicoes HTTP passam pelo filtro JWT:
 | `/ws-chat/**` | WS | WebSocket handshake |
 | `/swagger-ui/**` | GET | Documentacao |
 | `/v3/api-docs/**` | GET | OpenAPI spec |
-| `/actuator/**` | GET | Health check e metricas |
+| `/actuator/health` | GET | Health check |
 
 ### Endpoints Protegidos
 
@@ -132,9 +133,10 @@ Protecao contra brute force em endpoints sensiveis:
 |----------|--------|--------|
 | `POST /auth/login` | 10 requisicoes | 1 minuto |
 | `POST /usuarios` | 10 requisicoes | 1 minuto |
-
+| `POST /auth/esqueci-senha` | 10 requisicoes | 1 minuto |
+| `POST /auth/redefinir-senha` | 10 requisicoes | 1 minuto |
 **Implementacao:**
-- Identificacao por IP (`X-Forwarded-For` ou `remoteAddr`)
+- Identificacao por IP via `request.getRemoteAddr()` (o IP real pode ser resolvido pelo framework quando ha proxy configurado)
 - Janela deslizante (sliding window) in-memory
 - Response `429 Too Many Requests` quando excedido
 - Chave: `IP:path` (cada endpoint tem seu proprio contador)
