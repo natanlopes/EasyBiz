@@ -15,7 +15,7 @@ public class OpenApiConfig {
             .info(new Info()
                 .title("EasyBiz API")
                 .description("Plataforma de serviços flexíveis — conectando clientes e prestadores")
-                .version("1.0.0")
+                .version("1.1.1")
             );
     }
 }

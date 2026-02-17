@@ -6,7 +6,9 @@ O formato e baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
-
+## [1.1.1] - 2026-02-17
+- Corrigidos contratos HTTP em `API.md` e `INTEGRATION.md` para refletir status reais dos endpoints (`/auth/login` = 200, `/usuarios` = 201, `/negocios` = 201).
+- Corrigida a resposta de `GET /usuarios/{id}` na documentação (perfil público sem e-ma
 ## [1.1.0] - 2026-02-15
 
 ### Seguranca (P0)
@@ -152,7 +154,7 @@ docs/
 - **Negocios**: CRUD completo, busca por geolocalizacao (Haversine)
 - **Pedidos**: Workflow completo (ABERTO -> ACEITO -> CONCLUIDO)
 - **Chat**: WebSocket STOMP em tempo real + historico REST
-- **Avaliacoes**: Sistema de notas com atualizacao de media
+- **Avaliacoes**: Sistema de notas com atualizacao de média
 
 #### Documentacao
 - API.md: Contrato completo da API
@@ -169,14 +171,14 @@ docs/
 
 ## Convencao de Commits
 
-| Tipo | Descricao |
-|------|-----------|
-| `feat(EB-XX)` | Nova funcionalidade |
-| `fix(EB-XX)` | Correcao de bug |
-| `docs(EB-XX)` | Apenas documentacao |
-| `infra(EB-XX)` | Infraestrutura/deploy |
+| Tipo              | Descricao                           |
+|-------------------|-------------------------------------|
+| `feat(EB-XX)`     | Nova funcionalidade                 |
+| `fix(EB-XX)`      | Correcao de bug                     |
+| `docs(EB-XX)`     | Apenas documentacao                 |
+| `infra(EB-XX)`    | Infraestrutura/deploy               |
 | `refactor(EB-XX)` | Refatoracao sem mudar comportamento |
-| `test(EB-XX)` | Adicionar/corrigir testes |
+| `test(EB-XX)`     | Adicionar/corrigir testes           |
 
 ## Versionamento
 

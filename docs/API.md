@@ -1,6 +1,6 @@
 # EasyBiz API - Contrato Completo
 
-> **Version:** 1.1.0
+> **Version:** 1.1.1
 > **Last Update:** 2026-02-15
 
 ## Base URL
@@ -114,7 +114,7 @@ Cadastra um novo usuario.
 }
 ```
 
-**Response 200:**
+**Response 201:**
 ```json
 {
   "id": 1,
@@ -158,11 +158,11 @@ Retorna o perfil publico de um usuario.
 **Auth:** Sim
 
 **Response 200:**
-```json
+```
+json
 {
   "id": 1,
   "nome": "Joao Silva",
-  "email": "joao@email.com",
   "fotoUrl": "https://example.com/foto.jpg"
 }
 ```
@@ -207,8 +207,9 @@ Cria um negocio vinculado ao usuario autenticado.
 }
 ```
 
-**Response 200:**
-```json
+**Response 201:**
+```
+json
 {
   "id": 1,
   "nome": "Barbearia do Joao",

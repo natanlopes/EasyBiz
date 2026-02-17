@@ -174,7 +174,7 @@ Authorization: Bearer <token>    # except public endpoints
 
 ### 4.1 Auth
 
-#### `POST /usuarios` — Register User
+#### `POST /auth/login` — Login
 
 **Auth required:** No
 
@@ -280,7 +280,7 @@ Authorization: Bearer <token>    # except public endpoints
 }
 ```
 
-**Response `200 OK`:**
+**Response `201 Created`:**
 ```json
 {
   "id": 1,
@@ -329,7 +329,15 @@ Authorization: Bearer <token>    # except public endpoints
 
 **Auth required:** Yes
 
-**Response `200 OK`:** Same structure as `/usuarios/me`
+**Response `200 OK`:**
+``` 
+json
+{
+  "id": 2,
+  "nome": "Joao Silva",
+  "fotoUrl": "https://example.com/foto.jpg"
+}
+```
 
 **Error `404 Not Found`:** User not found
 
@@ -367,8 +375,9 @@ Authorization: Bearer <token>    # except public endpoints
 }
 ```
 
-**Response `200 OK`:**
-```json
+**Response `201 Created`:**
+``` 
+json
 {
   "id": 1,
   "nome": "Barbearia do Edson",
@@ -384,7 +393,7 @@ Authorization: Bearer <token>    # except public endpoints
 }
 ```
 
-**Available categories (enum `TipoNegocio`):**
+**Available categories (string livre no backend, sugestoes para o app):**
 ```
 BARBEARIA, MECANICA, ELETRICISTA, ENCANADOR, PEDREIRO,
 PINTOR, PERSONAL_TRAINER, MOTOTAXI, FRETE, LIMPEZA,
@@ -869,7 +878,7 @@ User taps "Esqueci minha senha"
 ```
 User taps "Cadastrar"
   |-> POST /usuarios { nomeCompleto, email, senha }
-       |-> 200 -> POST /auth/login (auto-login) -> Navigate to Home
+       |->  201 -> POST /auth/login (auto-login) -> Navigate to Home
        |-> 400 -> Show "Email ja cadastrado"
        |-> 429 -> Show "Muitas tentativas. Aguarde 1 minuto."
 ```
