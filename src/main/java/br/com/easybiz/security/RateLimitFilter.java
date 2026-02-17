@@ -1,8 +1,6 @@
 package br.com.easybiz.security;
 
 import java.io.IOException;
-
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -80,13 +78,7 @@ public class RateLimitFilter implements Filter {
     @Scheduled(fixedRate = 300_000)
     public void cleanupExpiredEntries() {
         long now = System.currentTimeMillis();
-        Iterator<Map.Entry<String, RateInfo>> it = clients.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<String, RateInfo> entry = it.next();
-            if (now - entry.getValue().windowStart > WINDOW_MS) {
-                it.remove();
-            }
-        }
+        clients.entrySet().removeIf(entry -> now - entry.getValue().windowStart > WINDOW_MS);
     }
 
     /**
