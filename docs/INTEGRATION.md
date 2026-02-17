@@ -44,7 +44,8 @@ curl http://localhost:8080/swagger-ui/index.html
 
 **First API call - Register + Login:**
 
-```bash
+```
+bash
 # Register
 curl -X POST http://localhost:8080/usuarios \
   -H "Content-Type: application/json" \
@@ -62,11 +63,11 @@ curl -X POST http://localhost:8080/auth/login \
 
 ## 2. Environments
 
-| Environment | Base URL | Status |
-|-------------|----------|--------|
-| Local | `http://localhost:8080` | Active |
-| Staging | `https://easybiz-staging.up.railway.app` | Planned |
-| Production | `https://api.easybiz.com.br` | Planned |
+| Environment | Base URL                                 | Status  |
+|-------------|------------------------------------------|---------|
+| Local       | `http://localhost:8080`                  | Active  |
+| Staging     | `https://easybiz-staging.up.railway.app` | Planned |
+| Production  | `https://api.easybiz.com.br`             | Planned |
 
 **Important:** All endpoints require HTTPS in staging/production. Local development uses HTTP.
 
@@ -99,11 +100,11 @@ EasyBiz uses **JWT (JSON Web Token)** with stateless authentication. No sessions
 
 ### 3.2 Token Rules
 
-| Property | Value |
-|----------|-------|
-| Algorithm | HS256 |
-| Expiration | 24 hours (86400000 ms) |
-| Header format | `Authorization: Bearer <token>` |
+| Property      | Value                                |
+|---------------|--------------------------------------|
+| Algorithm     | HS256                                |
+| Expiration    | 24 hours (86400000 ms)               |
+| Header format | `Authorization: Bearer <token>`      |
 | Token content | User email embedded in subject claim |
 
 ### 3.3 How to Use the Token
@@ -675,11 +676,11 @@ FOTOGRAFO, PROFESSOR_PARTICULAR, VETERINARIO, OUTROS
 
 ### 5.2 Connection
 
-| Property | Value |
-|----------|-------|
+| Property | Value                                                                           |
+|----------|---------------------------------------------------------------------------------|
 | Endpoint | `ws://localhost:8080/ws-chat` (dev) / `wss://api.easybiz.com.br/ws-chat` (prod) |
-| Protocol | STOMP over SockJS |
-| Auth | `Authorization: Bearer <token>` header during CONNECT |
+| Protocol | STOMP over SockJS                                                               |
+| Auth     | `Authorization: Bearer <token>` header during CONNECT                           |
 
 ### 5.3 Connection Flow
 
@@ -779,29 +780,29 @@ All errors follow this format:
 
 ### 6.2 HTTP Status Codes
 
-| Code | Meaning | When |
-|------|---------|------|
-| `200` | OK | Successful GET, POST, PATCH |
-| `204` | No Content | Successful operation with no response body |
-| `400` | Bad Request | Validation error, business rule violation |
-| `401` | Unauthorized | Missing/expired/invalid token |
-| `403` | Forbidden | Valid token but no permission (IDOR) |
-| `404` | Not Found | Resource doesn't exist |
+| Code  | Meaning           | When                                               |
+|-------|-------------------|----------------------------------------------------|
+| `200` | OK                | Successful GET, POST, PATCH                        |
+| `204` | No Content        | Successful operation with no response body         |
+| `400` | Bad Request       | Validation error, business rule violation          |
+| `401` | Unauthorized      | Missing/expired/invalid token                      |
+| `403` | Forbidden         | Valid token but no permission (IDOR)               |
+| `404` | Not Found         | Resource doesn't exist                             |
 | `429` | Too Many Requests | Rate limit exceeded (10 req/min on login/register) |
-| `500` | Internal Error | Unexpected server error |
+| `500` | Internal Error    | Unexpected server error                            |
 
 ### 6.3 Common Error Messages
 
-| Error | Cause | Frontend Action |
-|-------|-------|-----------------|
-| `"Credenciais invalidas"` | Wrong email/password | Show error on login form |
-| `"Email ja cadastrado"` | Duplicate email | Show error on register form |
-| `"Negocio nao encontrado"` | Invalid business ID | Show "not found" screen |
-| `"Pedido nao encontrado"` | Invalid order ID | Navigate back |
-| `"Pedido ja foi avaliado"` | Duplicate review | Disable review button |
-| `"Apenas o cliente pode cancelar"` | Provider tried to cancel | Hide cancel button for providers |
-| `"Pedido nao esta ABERTO"` | Invalid status transition | Refresh order status |
-| `"Acesso negado"` | IDOR attempt | Navigate back, show error toast |
+| Error                              | Cause                     | Frontend Action                  |
+|------------------------------------|---------------------------|----------------------------------|
+| `"Credenciais invalidas"`          | Wrong email/password      | Show error on login form         |
+| `"Email ja cadastrado"`            | Duplicate email           | Show error on register form      |
+| `"Negocio nao encontrado"`         | Invalid business ID       | Show "not found" screen          |
+| `"Pedido nao encontrado"`          | Invalid order ID          | Navigate back                    |
+| `"Pedido ja foi avaliado"`         | Duplicate review          | Disable review button            |
+| `"Apenas o cliente pode cancelar"` | Provider tried to cancel  | Hide cancel button for providers |
+| `"Pedido nao esta ABERTO"`         | Invalid status transition | Refresh order status             |
+| `"Acesso negado"`                  | IDOR attempt              | Navigate back, show error toast  |
 
 ### 6.4 Recommended Error Handling in Kotlin
 
@@ -999,7 +1000,8 @@ Update business logo
 
 ### 8.1 Ktor Client Setup (KMP)
 
-```kotlin
+```
+kotlin
 // core/networking/HttpClientFactory.kt
 
 import io.ktor.client.*
@@ -1052,13 +1054,15 @@ object HttpClientFactory {
         }
     }
 }
+
 ```
 
 > **Android Emulator:** Use `10.0.2.2` instead of `localhost` to reach the host machine.
 
 ### 8.2 Token Manager
 
-```kotlin
+```
+kotlin
 // core/networking/TokenManager.kt
 
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -1082,11 +1086,13 @@ object TokenManager {
 
     fun isLoggedIn(): Boolean = _token.value != null
 }
+
 ```
 
 ### 8.3 API Service Example
 
-```kotlin
+```
+kotlin
 // features/auth/data/remote/AuthApi.kt
 
 import io.ktor.client.*
@@ -1123,11 +1129,13 @@ class AuthApi(private val client: HttpClient) {
         return client.get("/usuarios/me").body()
     }
 }
+
 ```
 
 ### 8.4 WebSocket Client (STOMP over SockJS)
 
-```kotlin
+```
+kotlin
 // core/networking/WebSocketManager.kt
 
 // Recommended library for STOMP in KMP: Krossbow
@@ -1170,7 +1178,8 @@ class ChatWebSocketManager(
 
 ### 8.5 Koin DI Module
 
-```kotlin
+```
+kotlin
 // core/di/NetworkModule.kt
 
 import org.koin.dsl.module
@@ -1183,6 +1192,7 @@ val networkModule = module {
     single { AvaliacaoApi(get()) }
     single { ChatWebSocketManager { TokenManager.get() } }
 }
+
 ```
 
 ---
@@ -1343,24 +1353,24 @@ data class MensagemResponse(
 
 ### 10.2 Permission Matrix
 
-| Action | Client | Provider (Business Owner) |
-|--------|--------|---------------------------|
-| Create order | Yes | No |
-| Accept order | No | Yes |
-| Decline order | No | Yes |
-| Complete order | No | Yes |
-| Cancel order | Yes | No |
-| Send message | Yes | Yes |
-| View chat history | Yes | Yes |
-| Create review | Yes | No |
+| Action            | Client | Provider (Business Owner) |
+|-------------------|--------|---------------------------|
+| Create order      | Yes    | No                        |
+| Accept order      | No     | Yes                       |
+| Decline order     | No     | Yes                       |
+| Complete order    | No     | Yes                       |
+| Cancel order      | Yes    | No                        |
+| Send message      | Yes    | Yes                       |
+| View chat history | Yes    | Yes                       |
+| Create review     | Yes    | No                        |
 
 ### 10.3 Valid State Transitions
 
-| From | To | Who | Endpoint |
-|------|----|-----|----------|
-| ABERTO | ACEITO | Provider | `PATCH /pedidos/{id}/aceitar` |
-| ABERTO | RECUSADO | Provider | `PATCH /pedidos/{id}/recusar` |
-| ABERTO | CANCELADO | Client | `PATCH /pedidos/{id}/cancelar` |
+| From   | To        | Who      | Endpoint                       |
+|--------|-----------|----------|--------------------------------|
+| ABERTO | ACEITO    | Provider | `PATCH /pedidos/{id}/aceitar`  |
+| ABERTO | RECUSADO  | Provider | `PATCH /pedidos/{id}/recusar`  |
+| ABERTO | CANCELADO | Client   | `PATCH /pedidos/{id}/cancelar` |
 | ACEITO | CONCLUIDO | Provider | `PATCH /pedidos/{id}/concluir` |
 
 ### 10.4 UI State for Order Cards
@@ -1423,10 +1433,10 @@ Before each PR, verify these flows work end-to-end:
 
 ## 12. Changelog
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.1.0 | 2026-02-15 | Fix endpoints, add password recovery, update DTOs, add pagination |
-| 1.0.0 | 2026-02-06 | Initial release - complete V1 API documentation |
+| Version | Date       | Changes                                                           |
+|---------|------------|-------------------------------------------------------------------|
+| 1.1.0   | 2026-02-15 | Fix endpoints, add password recovery, update DTOs, add pagination |
+| 1.0.0   | 2026-02-06 | Initial release - complete V1 API documentation                   |
 
 ---
 
