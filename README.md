@@ -141,9 +141,9 @@ ABERTO --> ACEITO --> CONCLUIDO --> AVALIACAO
 br.com.easybiz
 +-- config        # SecurityConfig, WebSocketConfig, OpenAPIConfig
 +-- controller    # Endpoints REST (7 controllers)
-+-- dto           # Records para transferencia de dados (17 DTOs)
++-- dto           # Records para transferencia de dados (19 DTOs)
 +-- exception     # Excecoes customizadas + GlobalExceptionHandler
-+-- model         # Entidades JPA (7 entidades)
++-- model         # Entidades JPA (8 entidades)
 +-- repository    # Interfaces Spring Data (7 repositories)
 +-- security      # JwtService, Filters, Interceptors
 +-- service       # Regras de negocio (8 services)

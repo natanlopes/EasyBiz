@@ -228,7 +228,7 @@ Cria um negocio vinculado ao usuario autenticado.
 - `nome`: obrigatorio
 - `categoria`: obrigatorio
 
-**Categorias disponiveis (enum TipoNegocio):**
+**Categorias sugeridas (nao restritas por enum no backend):**
 ```
 BARBEARIA, MECANICA, ELETRICISTA, ENCANADOR, PEDREIRO,
 PINTOR, PERSONAL_TRAINER, MOTOTAXI, FRETE, LIMPEZA,
@@ -246,11 +246,11 @@ Busca inteligente por localizacao e ranking.
 
 **Parametros:**
 
-| Param | Tipo | Obrigatorio | Descricao |
-|-------|------|-------------|-----------|
-| `lat` | Double | Sim | Latitude do usuario |
-| `lon` | Double | Sim | Longitude do usuario |
-| `busca` | String | Nao | Termo de busca (nome ou categoria) |
+| Param   | Tipo   | Obrigatorio | Descricao                          |
+|---------|--------|-------------|------------------------------------|
+| `lat`   | Double | Sim         | Latitude do usuario                |
+| `lon`   | Double | Sim         | Longitude do usuario               |
+| `busca` | String | Nao         | Termo de busca (nome ou categoria) |
 
 **Response 200:**
 ```json
@@ -339,11 +339,11 @@ Lista pedidos do usuario autenticado (paginado).
 
 **Parametros de paginacao:**
 
-| Param | Tipo | Default | Descricao |
-|-------|------|---------|-----------|
-| `page` | int | 0 | Numero da pagina |
-| `size` | int | 20 | Itens por pagina |
-| `sort` | string | - | Ordenacao (ex: `criadoEm,desc`) |
+| Param  | Tipo   | Default | Descricao                       |
+|--------|--------|---------|---------------------------------|
+| `page` | int    | 0       | Numero da pagina                |
+| `size` | int    | 20      | Itens por pagina                |
+| `sort` | string | -       | Ordenacao (ex: `criadoEm,desc`) |
 
 **Response 200:**
 ```json
@@ -522,20 +522,20 @@ Marca mensagens como lidas.
 
 ### Conexao
 
-| Propriedade | Valor |
-|-------------|-------|
-| Endpoint | `ws://localhost:8080/ws-chat` |
-| Protocolo | STOMP sobre SockJS |
-| Auth | `Authorization: Bearer {JWT}` no CONNECT |
+| Propriedade | Valor                                    |
+|-------------|------------------------------------------|
+| Endpoint    | `ws://localhost:8080/ws-chat`            |
+| Protocolo   | STOMP sobre SockJS                       |
+| Auth        | `Authorization: Bearer {JWT}` no CONNECT |
 
 ### Topicos (Subscribe)
 
-| Topico | Payload |
-|--------|---------|
-| `/topic/mensagens/{pedidoId}` | Mensagem em tempo real |
-| `/topic/mensagens/{pedidoId}/digitando` | Indicador de digitacao |
-| `/topic/mensagens/{pedidoId}/lida` | Confirmacao de leitura |
-| `/topic/mensagens/{pedidoId}/ultimo-visto` | Ultimo visto |
+| Topico                                     | Payload                |
+|--------------------------------------------|------------------------|
+| `/topic/mensagens/{pedidoId}`              | Mensagem em tempo real |
+| `/topic/mensagens/{pedidoId}/digitando`    | Indicador de digitacao |
+| `/topic/mensagens/{pedidoId}/lida`         | Confirmacao de leitura |
+| `/topic/mensagens/{pedidoId}/ultimo-visto` | Ultimo visto           |
 
 ### Enviar (Send)
 
@@ -576,17 +576,17 @@ Todos os erros retornam a estrutura padronizada:
 
 ### Status codes
 
-| Codigo | Quando |
-|--------|--------|
-| 200 | Sucesso com corpo de resposta (GET e POST) |
-| 201 | Recurso criado |
-| 204 | Sucesso sem corpo (No Content,comum em PATCH desta API)) |
-| 400 | Validacao ou regra de negocio |
-| 401 | Token ausente, invalido ou expirado |
-| 403 | Token valido mas sem permissao |
-| 404 | Recurso nao encontrado |
-| 429 | Rate limit excedido (max 10 req/min nos endpoints sensiveis) |
-| 500 | Erro interno do servidor |
+| Codigo | Quando                                                       |
+|--------|--------------------------------------------------------------|
+| 200    | Sucesso com corpo de resposta (GET e POST)                   |
+| 201    | Recurso criado                                               |
+| 204    | Sucesso sem corpo (No Content,comum em PATCH desta API))     |
+| 400    | Validacao ou regra de negocio                                |
+| 401    | Token ausente, invalido ou expirado                          |
+| 403    | Token valido mas sem permissao                               |
+| 404    | Recurso nao encontrado                                       |
+| 429    | Rate limit excedido (max 10 req/min nos endpoints sensiveis) |
+| 500    | Erro interno do servidor                                     |
 
 ---
 

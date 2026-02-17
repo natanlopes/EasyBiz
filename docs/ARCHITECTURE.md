@@ -62,8 +62,9 @@ Negocios sem coordenadas (latitude/longitude nulos) sao automaticamente excluido
                             |
                             v
 +-------------------------------------------------------------+
-|                    RATE LIMITING                               |
-|         (10 req/min em /auth/login e POST /usuarios)          |
+|                    RATE LIMITING                            |
+|(10 req/min em /auth/login, /usuarios, /auth/esqueci-senha e |
+|/auth/redefinir-senha)                                       |
 +---------------------------+---------------------------------+
                             |
            +----------------+----------------+
