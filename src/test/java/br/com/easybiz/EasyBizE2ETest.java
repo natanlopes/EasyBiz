@@ -8,7 +8,9 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder; // IMPORT NOVO
 // ActiveProfiles removido - usa application.properties de src/test/resources automaticamente
 import org.springframework.test.web.servlet.MockMvc;
@@ -35,6 +37,9 @@ public class EasyBizE2ETest {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @SuppressWarnings("unused")
+    @MockitoBean
+    private JavaMailSender javaMailSender;
     // 🔹 INJEÇÃO NECESSÁRIA PARA CRIPTOGRAFAR A SENHA NO SETUP
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -198,7 +203,7 @@ public class EasyBizE2ETest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + tokenPrestador)
                         .content(json))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         JsonNode response = objectMapper.readTree(result.getResponse().getContentAsString());
