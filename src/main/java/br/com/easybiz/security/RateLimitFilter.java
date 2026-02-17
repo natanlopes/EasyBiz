@@ -1,12 +1,15 @@
 package br.com.easybiz.security;
 
 import java.io.IOException;
+
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import jakarta.servlet.Filter;
@@ -34,8 +37,12 @@ public class RateLimitFilter implements Filter {
         String path = httpRequest.getRequestURI();
         String method = httpRequest.getMethod();
 
-        boolean isRateLimited = ("POST".equalsIgnoreCase(method) && "/auth/login".equals(path))
-                || ("POST".equalsIgnoreCase(method) && "/usuarios".equals(path));
+        boolean isRateLimited = "POST".equalsIgnoreCase(method) && (
+                "/auth/login".equals(path)
+                || "/usuarios".equals(path)
+                || "/auth/esqueci-senha".equals(path)
+                || "/auth/redefinir-senha".equals(path)
+        );
 
         if (!isRateLimited) {
             chain.doFilter(request, response);
@@ -67,11 +74,27 @@ public class RateLimitFilter implements Filter {
         chain.doFilter(request, response);
     }
 
-    private String getClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isEmpty()) {
-            return forwarded.split(",")[0].trim();
+    /**
+     * Remove entradas expiradas a cada 5 minutos para evitar memory leak.
+     */
+    @Scheduled(fixedRate = 300_000)
+    public void cleanupExpiredEntries() {
+        long now = System.currentTimeMillis();
+        Iterator<Map.Entry<String, RateInfo>> it = clients.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, RateInfo> entry = it.next();
+            if (now - entry.getValue().windowStart > WINDOW_MS) {
+                it.remove();
+            }
         }
+    }
+
+    /**
+     * Usa apenas request.getRemoteAddr() para evitar spoofing via X-Forwarded-For.
+     * Quando atrás de proxy reverso (Railway, Nginx), o Spring resolve o IP real
+     * via server.forward-headers-strategy=framework no application.properties.
+     */
+    private String getClientIp(HttpServletRequest request) {
         return request.getRemoteAddr();
     }
 
