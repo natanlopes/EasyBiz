@@ -173,7 +173,7 @@ Authorization: Bearer <token>    # except public endpoints
 
 ### 4.1 Auth
 
-#### `POST /auth/login` - Login
+#### `POST /usuarios` — Register User
 
 **Auth required:** No
 
