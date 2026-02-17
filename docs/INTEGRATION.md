@@ -1365,7 +1365,8 @@ data class MensagemResponse(
 
 ### 10.4 UI State for Order Cards
 
-```kotlin
+```
+kotlin
 enum class OrderStatus(val label: String, val color: Color) {
     ABERTO("Aguardando", Color(0xFFFFA726)),      // Orange
     ACEITO("Em andamento", Color(0xFF42A5F5)),     // Blue
@@ -1373,6 +1374,7 @@ enum class OrderStatus(val label: String, val color: Color) {
     CONCLUIDO("Concluido", Color(0xFF66BB6A)),     // Green
     CANCELADO("Cancelado", Color(0xFF9E9E9E))      // Gray
 }
+
 ```
 
 ---
