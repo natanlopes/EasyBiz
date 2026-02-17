@@ -19,10 +19,10 @@ O EasyBiz utiliza uma **Arquitetura em Camadas (Layered Architecture)** baseada 
 ## 3. Padrao de Chat Hibrido (Hybrid Chat Pattern)
 Para garantir performance e persistencia, adotamos uma abordagem hibrida:
 
-| Camada | Tecnologia | Responsabilidade |
-| :--- | :--- | :--- |
-| **Historico** | REST API (HTTP) | Carregar mensagens antigas ao abrir a tela. Garante que nada seja perdido. |
-| **Ao Vivo** | WebSocket (STOMP) | Entrega instantanea de novas mensagens sem *polling*. |
+| Camada        | Tecnologia        | Responsabilidade                                                           |
+|:--------------|:------------------|:---------------------------------------------------------------------------|
+| **Historico** | REST API (HTTP)   | Carregar mensagens antigas ao abrir a tela. Garante que nada seja perdido. |
+| **Ao Vivo**   | WebSocket (STOMP) | Entrega instantanea de novas mensagens sem *polling*.                      |
 
 **Decisao de Design:**
 Nao usamos o WebSocket para buscar historico para evitar sobrecarga no broker de mensagens. O banco de dados relacional (Postgres) e mais eficiente para consultas de historico via HTTP.
@@ -106,12 +106,12 @@ Negocios sem coordenadas (latitude/longitude nulos) sao automaticamente excluido
 
 ### Principios de Seguranca
 
-| Principio | Implementacao |
-|-----------|--------------|
-| **Defense in Depth** | Multiplas camadas de validacao |
-| **Least Privilege** | Acesso apenas ao necessario |
-| **Secure by Default** | Endpoints bloqueados por padrao |
-| **No Secrets in Code** | Variaveis de ambiente |
+| Principio              | Implementacao                   |
+|------------------------|---------------------------------|
+| **Defense in Depth**   | Multiplas camadas de validacao  |
+| **Least Privilege**    | Acesso apenas ao necessario     |
+| **Secure by Default**  | Endpoints bloqueados por padrao |
+| **No Secrets in Code** | Variaveis de ambiente           |
 
 ### Configuracoes Sensiveis
 
@@ -131,12 +131,12 @@ Camada de `@RestControllerAdvice` para interceptar excecoes e garantir respostas
 
 ### Excecoes Customizadas
 
-| Excecao | HTTP Status |
-|---------|------------|
-| `ResourceNotFoundException` | 404 Not Found |
-| `UnauthorizedException` | 401 Unauthorized |
-| `ForbiddenException` | 403 Forbidden |
-| `BusinessException` | 400 Bad Request |
+| Excecao                     | HTTP Status      |
+|-----------------------------|------------------|
+| `ResourceNotFoundException` | 404 Not Found    |
+| `UnauthorizedException`     | 401 Unauthorized |
+| `ForbiddenException`        | 403 Forbidden    |
+| `BusinessException`         | 400 Bad Request  |
 
 ### Formato Padrao (ApiError)
 
@@ -160,10 +160,10 @@ Beneficios:
 
 O projeto usa **Flyway** para versionamento do schema do banco de dados.
 
-| Migration | Descricao |
-|-----------|-----------|
-| `V1__baseline.sql` | Schema inicial: usuarios, negocios, pedido_servico, mensagem, avaliacao |
-| `V2__add_password_reset_tokens.sql` | Tabela de tokens de recuperacao de senha |
+| Migration                           | Descricao                                                               |
+|-------------------------------------|-------------------------------------------------------------------------|
+| `V1__baseline.sql`                  | Schema inicial: usuarios, negocios, pedido_servico, mensagem, avaliacao |
+| `V2__add_password_reset_tokens.sql` | Tabela de tokens de recuperacao de senha                                |
 
 ### Configuracao
 
@@ -212,7 +212,7 @@ Usado pelo Railway para verificar saude da aplicacao (`/actuator/health`).
 src/main/java/br/com/easybiz/
 +-- config/           # SecurityConfig, WebSocketConfig, OpenAPIConfig
 +-- controller/       # REST Controllers (7)
-+-- dto/              # Data Transfer Objects - Records (17)
++-- dto/              # Data Transfer Objects - Records (19)
 +-- exception/        # Excecoes customizadas + GlobalExceptionHandler
 +-- model/            # Entidades JPA (7)
 +-- repository/       # Spring Data JPA Repositories (7)
