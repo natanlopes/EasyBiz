@@ -30,7 +30,6 @@ import jakarta.validation.Valid;
 @Tag(name = "Negócios", description = "Gerenciamento de negócios cadastrados na plataforma")
 @RestController
 @RequestMapping("/negocios")
-@SecurityRequirement(name = "bearerAuth")
 public class NegocioController {
 
     private final NegocioService negocioService;
