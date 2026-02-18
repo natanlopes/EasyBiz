@@ -3,6 +3,7 @@ package br.com.easybiz.controller;
 import java.security.Principal;
 
 import br.com.easybiz.dto.UsuarioPerfilPublicoDTO;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -61,6 +62,7 @@ public class UsuarioController {
 
     @Operation(summary = "Meus Dados", description = "Retorna dados do usuário logado baseados no Token.")
     @GetMapping("/me")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<UsuarioResponseDTO> meusDados(Principal principal) {
         // Resolve ID via AuthContextService
         Long meuId = authContextService.getUsuarioIdByEmail(principal.getName());
@@ -89,6 +91,7 @@ public class UsuarioController {
 
     @Operation(summary = "Atualizar minha foto", description = "Define a URL da foto de perfil.")
     @PatchMapping("/me/foto")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<Void> atualizarMinhaFoto(
             @RequestBody @Valid AtualizarFotoDTO dto,
             Principal principal

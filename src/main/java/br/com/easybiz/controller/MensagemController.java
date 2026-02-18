@@ -3,6 +3,7 @@ package br.com.easybiz.controller;
 import java.security.Principal;
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,6 +24,7 @@ import jakarta.validation.Valid;
 @Tag(name = "5. Chat do Pedido", description = "Envio e leitura de mensagens entre cliente e prestador")
 @RestController
 @RequestMapping("/pedidos/{pedidoId}/mensagens")
+@SecurityRequirement(name = "bearerAuth")
 public class MensagemController {
 
 	private final MensagemService mensagemService;

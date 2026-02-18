@@ -2,6 +2,8 @@ package br.com.easybiz.controller;
 
 import java.security.Principal;
 import java.util.List;
+
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +30,7 @@ import jakarta.validation.Valid;
 @Tag(name = "Negócios", description = "Gerenciamento de negócios cadastrados na plataforma")
 @RestController
 @RequestMapping("/negocios")
+@SecurityRequirement(name = "bearerAuth")
 public class NegocioController {
 
     private final NegocioService negocioService;
@@ -54,6 +57,7 @@ public class NegocioController {
             @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
     })
     @PostMapping
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<NegocioResponseDTO> criar(@RequestBody @Valid CriarNegocioDTO dto, Principal principal) {
         Long usuarioLogadoId = authContextService.getUsuarioIdByEmail(principal.getName());
 
@@ -80,6 +84,7 @@ public class NegocioController {
     }
 
     @PatchMapping("/{id}/logo")
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Atualizar Logo do Negócio", description = "Requer que o usuário logado seja o dono.")
     public ResponseEntity<Void> atualizarLogo(
             @PathVariable Long id,
