@@ -3,6 +3,7 @@ package br.com.easybiz.dto;
 import java.time.LocalDateTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -16,5 +17,7 @@ public record CriarPedidoServicoDTO(
     String descricao,
 
     @Schema(description = "Data desejada (ISO 8601)", example = "2026-02-10T15:30:00")
+    @NotNull(message = "A data desejada e obrigatoria")
+    @Future(message = "A data deve ser futura")
     LocalDateTime dataDesejada
 ) {}
