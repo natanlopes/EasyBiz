@@ -2,6 +2,7 @@ package br.com.easybiz.model;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import jakarta.persistence.Version;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -35,6 +36,10 @@ public class PedidoServico {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Version
+    @Column(nullable = false)
+    private Long versao;
 
     @ManyToOne
     @JoinColumn(name = "cliente_id", nullable = false)
