@@ -276,7 +276,8 @@ public class EasyBizE2ETest {
         String json = """
             {
                 "negocioId": %d,
-                "descricao": "Corte de cabelo E2E Test"
+                "descricao": "Corte de cabelo E2E Test",
+                "dataDesejada": "2030-12-31T10:00:00"
             }
             """.formatted(negocioId);
 
@@ -426,7 +427,8 @@ public class EasyBizE2ETest {
         String json = """
             {
                 "negocioId": %d,
-                "descricao": "Pedido para teste de cancelamento"
+                "descricao": "Pedido para teste de cancelamento",
+                "dataDesejada": "2030-12-31T10:00:00"
             }
             """.formatted(negocioId);
 
