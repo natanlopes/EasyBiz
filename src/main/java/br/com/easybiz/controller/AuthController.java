@@ -27,7 +27,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("/auth")
 @Tag(name = "Autenticacao", description = "Login para pegar o Token JWT")
+
 public class AuthController {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuthController.class);
 
     private final UsuarioRepository usuarioRepository;
     private final JwtService jwtService;
@@ -69,8 +71,10 @@ public class AuthController {
             .orElseThrow(() -> new UnauthorizedException("Credenciais invalidas"));
 
         if (!passwordEncoder.matches(request.senha(), usuario.getSenha())) {
+            log.warn("Tentativa de login falhou para email: {}", request.email());
             throw new UnauthorizedException("Credenciais invalidas");
         }
+
 
         String token = jwtService.gerarToken(usuario.getEmail());
 
