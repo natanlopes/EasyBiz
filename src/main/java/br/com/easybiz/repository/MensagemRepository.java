@@ -11,15 +11,19 @@ import br.com.easybiz.model.Mensagem;
 
 public interface MensagemRepository extends JpaRepository<Mensagem, Long> {
 
+    List<Mensagem> findByPedidoServico_IdOrderByEnviadoEmAsc(Long pedidoId);
 
+ // 🔹 Mensagens NÃO lidas de um pedido (exceto do próprio usuário)
     @Query("""
-    SELECT m FROM Mensagem m
-    JOIN FETCH m.remetente
-    WHERE m.pedidoServico.id = :pedidoId
-    ORDER BY m.enviadoEm ASC
-""")
-    List<Mensagem> findByPedidoServico_IdOrderByEnviadoEmAsc(@Param("pedidoId") Long pedidoId);
-
+        SELECT m FROM Mensagem m
+        WHERE m.pedidoServico.id = :pedidoId
+          AND m.lida = false
+          AND m.remetente.id <> :usuarioId
+    """)
+    List<Mensagem> findNaoLidasDoPedido(
+            @Param("pedidoId") Long pedidoId,
+            @Param("usuarioId") Long usuarioId
+    );
 
     @org.springframework.data.jpa.repository.Modifying // Indica que é um UPDATE/DELETE
     @org.springframework.data.jpa.repository.Query("UPDATE Mensagem m SET m.lida = true, m.lidaEm = :data WHERE m.id = :id")
