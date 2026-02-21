@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Size;
 public record RedefinirSenhaRequestDTO(
     @Schema(description = "Codigo de 6 digitos recebido por e-mail", example = "847291")
     @NotBlank(message = "O codigo e obrigatorio")
+    @Size(min=6, max = 6)
     String token,
 
     @Schema(description = "Nova senha do usuario", example = "novaSenha123")

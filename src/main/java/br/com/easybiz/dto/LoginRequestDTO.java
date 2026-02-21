@@ -3,6 +3,7 @@ package br.com.easybiz.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Schema(description = "Dados para login")
 public record LoginRequestDTO(
@@ -13,5 +14,6 @@ public record LoginRequestDTO(
 
     @Schema(description = "Senha do usuario", example = "123456")
     @NotBlank(message = "A senha e obrigatoria")
+    @Size(min=6)
     String senha
 ) {}
