@@ -37,6 +37,7 @@ public class NegocioService {
         negocio.setLongitude(longitude);
         negocio.setEnderecoCompleto(enderecoCompleto);
 
+
         return negocioRepository.save(negocio);
     }
 
