@@ -4,8 +4,11 @@ import java.security.Principal;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,6 +33,7 @@ import jakarta.validation.Valid;
 @Tag(name = "Negócios", description = "Gerenciamento de negócios cadastrados na plataforma")
 @RestController
 @RequestMapping("/negocios")
+@Validated
 public class NegocioController {
 
     private final NegocioService negocioService;
@@ -76,8 +80,8 @@ public class NegocioController {
     @GetMapping("/busca")
     @Operation(summary = "Busca inteligente por localização e ranking")
     public ResponseEntity<List<NegocioResponseDTO>> buscar(
-            @RequestParam Double lat,
-            @RequestParam Double lon,
+            @RequestParam @DecimalMin("-90.0") @DecimalMax("90.0") Double lat,
+            @RequestParam @DecimalMin("-180.0") @DecimalMax("180.0") Double lon,
             @RequestParam(required = false) String busca
     ) {
         List<NegocioResponseDTO> resultado = negocioService.buscarNegocios(lat, lon, busca)

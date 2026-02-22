@@ -76,12 +76,13 @@ public class PedidoServicoService {
         PedidoServico pedido = buscarPedido(pedidoId);
         validarDonoDoNegocio(pedido, usuarioLogadoId);
 
-        if (pedido.getStatus() == StatusPedido.CONCLUIDO) {
-            throw new BusinessException("Nao pode recusar servico concluido.");
+        if (pedido.getStatus() != StatusPedido.ABERTO) {
+            throw new BusinessException("Apenas pedidos ABERTOS podem ser recusados.");
         }
         pedido.setStatus(StatusPedido.RECUSADO);
         pedidoRepository.save(pedido);
     }
+
 
     @Transactional
     public void concluir(Long pedidoId, Long usuarioLogadoId) {
@@ -103,13 +104,16 @@ public class PedidoServicoService {
             throw new ForbiddenException("Apenas o cliente pode cancelar.");
         }
 
-        if (pedido.getStatus() == StatusPedido.CONCLUIDO) {
-            throw new BusinessException("Nao e possivel cancelar servico ja concluido.");
+        if (pedido.getStatus() == StatusPedido.CONCLUIDO ||
+                pedido.getStatus() == StatusPedido.CANCELADO ||
+                pedido.getStatus() == StatusPedido.RECUSADO) {
+            throw new BusinessException("Este pedido nao pode mais ser cancelado.");
         }
 
         pedido.setStatus(StatusPedido.CANCELADO);
         pedidoRepository.save(pedido);
     }
+
 
     public Page<PedidoServicoResponseDTO> listarMeusPedidos(Long usuarioId, Pageable pageable) {
         return pedidoRepository.findByClienteIdOrNegocioUsuarioId(usuarioId, usuarioId, pageable)

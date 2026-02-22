@@ -3,6 +3,7 @@ package br.com.easybiz.exception;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,6 +123,17 @@ public class GlobalExceptionHandler {
                 "Ocorreu um erro inesperado. Por favor, contate o suporte."
         );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+    // 8. Conflito de concorrência (Optimistic Locking) -> 409
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiError> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
+        ApiError error = new ApiError(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                "Conflito de Atualizacao",
+                "O pedido foi modificado por outra requisicao. Tente novamente."
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     private String formatFieldError(FieldError fieldError) {

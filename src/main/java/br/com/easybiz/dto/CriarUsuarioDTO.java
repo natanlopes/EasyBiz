@@ -9,11 +9,13 @@ import jakarta.validation.constraints.Size;
 public record CriarUsuarioDTO(
         @Schema(description = "Nome completo do proprietario", example = "Carlos Silva")
         @NotBlank
+        @Size(max=100)
         @Pattern(regexp = "^[^<>]*$", message = "Caracteres HTML não são permitidos por segurança")
         String nomeCompleto,
 
         @Schema(description = "E-mail para login", example = "carlos@easybiz.com")
         @NotBlank @Email
+        @Size(max=150)
         String email,
 
         @Schema(description = "Senha de acesso", example = "123456")
