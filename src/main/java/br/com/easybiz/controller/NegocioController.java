@@ -63,7 +63,12 @@ public class NegocioController {
         Negocio negocio = negocioService.criarNegocio(
                 usuarioLogadoId,
                 dto.nome(),
-                dto.categoria()
+                dto.categoria(),
+                dto.latitude(),
+                dto.longitude(),
+                dto.enderecoCompleto()
+
+
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(NegocioResponseDTO.fromEntity(negocio));
     }

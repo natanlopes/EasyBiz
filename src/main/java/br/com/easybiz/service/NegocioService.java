@@ -23,7 +23,8 @@ public class NegocioService {
         this.usuarioRepository = usuarioRepository;
     }
     @Transactional
-    public Negocio criarNegocio(Long usuarioId, String nome, String categoria) {
+    public Negocio criarNegocio(Long usuarioId, String nome, String categoria,
+                                Double latitude, Double longitude, String enderecoCompleto) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario nao encontrado"));
 
@@ -32,6 +33,9 @@ public class NegocioService {
         negocio.setCategoria(categoria.toUpperCase());
         negocio.setUsuario(usuario);
         negocio.setAtivo(true);
+        negocio.setLatitude(latitude);
+        negocio.setLongitude(longitude);
+        negocio.setEnderecoCompleto(enderecoCompleto);
 
         return negocioRepository.save(negocio);
     }
