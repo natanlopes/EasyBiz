@@ -1,7 +1,5 @@
 package br.com.easybiz.repository;
 
-import java.util.List;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -9,10 +7,7 @@ import org.springframework.data.repository.query.Param;
 import br.com.easybiz.model.Avaliacao;
 
 public interface AvaliacaoRepository extends JpaRepository<Avaliacao, Long> {
-    // Para buscar todas as avaliações de um prestador (ex: para mostrar no perfil dele)
-    List<Avaliacao> findByAvaliadoId(Long usuarioId);
 
-    // Para saber se esse pedido já foi avaliado (evitar duplicidade)
     boolean existsByPedidoId(Long pedidoId);
 
  //  CÁLCULO DE MÉDIA (Query JPQL)

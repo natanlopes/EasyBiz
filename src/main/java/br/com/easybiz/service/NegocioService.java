@@ -71,6 +71,22 @@ public class NegocioService {
         return termo;
     }
     @Transactional
+    public void atualizarLocalizacao(Long negocioId, Long usuarioLogadoId,
+                                      Double latitude, Double longitude, String enderecoCompleto) {
+        Negocio negocio = negocioRepository.findById(negocioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio nao encontrado"));
+
+        if (!negocio.getUsuario().getId().equals(usuarioLogadoId)) {
+            throw new ForbiddenException("Acesso negado: Voce nao e o dono deste negocio.");
+        }
+
+        negocio.setLatitude(latitude);
+        negocio.setLongitude(longitude);
+        negocio.setEnderecoCompleto(enderecoCompleto);
+        negocioRepository.save(negocio);
+    }
+
+    @Transactional
     public void atualizarLogo(Long negocioId, Long usuarioLogadoId, String novaUrl) {
         Negocio negocio = negocioRepository.findById(negocioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio nao encontrado"));

@@ -15,7 +15,7 @@ import br.com.easybiz.model.Usuario;
 import br.com.easybiz.repository.AvaliacaoRepository;
 import br.com.easybiz.repository.NegocioRepository;
 import br.com.easybiz.repository.PedidoServicoRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AvaliacaoService {

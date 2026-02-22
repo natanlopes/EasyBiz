@@ -5,6 +5,7 @@ import java.security.Principal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -43,7 +44,7 @@ public class PedidoServicoController {
             Principal principal
     ) {
         String emailCliente = principal.getName();
-        return ResponseEntity.ok(service.criar(emailCliente, dto));
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.criar(emailCliente, dto));
     }
 
     @GetMapping

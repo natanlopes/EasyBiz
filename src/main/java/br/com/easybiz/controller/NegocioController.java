@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.easybiz.dto.AtualizarFotoDTO;
+import br.com.easybiz.dto.AtualizarLocalizacaoDTO;
 import br.com.easybiz.dto.CriarNegocioDTO;
 import br.com.easybiz.dto.NegocioResponseDTO;
 import br.com.easybiz.model.Negocio;
@@ -89,6 +90,24 @@ public class NegocioController {
                 .map(NegocioResponseDTO::fromEntity)
                 .toList();
         return ResponseEntity.ok(resultado);
+    }
+
+    @PatchMapping("/{id}/localizacao")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Atualizar localização do negócio", description = "Define lat/lon e endereço. Requer que o usuário logado seja o dono.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Localização atualizada"),
+            @ApiResponse(responseCode = "403", description = "Usuário não é o dono do negócio"),
+            @ApiResponse(responseCode = "404", description = "Negócio não encontrado")
+    })
+    public ResponseEntity<Void> atualizarLocalizacao(
+            @PathVariable Long id,
+            @RequestBody @Valid AtualizarLocalizacaoDTO dto,
+            Principal principal
+    ) {
+        Long usuarioLogadoId = authContextService.getUsuarioIdByEmail(principal.getName());
+        negocioService.atualizarLocalizacao(id, usuarioLogadoId, dto.latitude(), dto.longitude(), dto.enderecoCompleto());
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/logo")

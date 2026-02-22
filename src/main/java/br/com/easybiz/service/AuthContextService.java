@@ -20,9 +20,4 @@ public class AuthContextService {
                 .map(Usuario::getId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario autenticado nao encontrado"));
     }
-
-    public Usuario getUsuarioByEmail(String email) {
-        return usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario autenticado nao encontrado"));
-    }
 }

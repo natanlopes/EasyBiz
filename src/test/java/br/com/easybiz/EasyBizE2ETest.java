@@ -191,11 +191,13 @@ public class EasyBizE2ETest {
     @Order(10)
     @DisplayName("2.1 - Criar Negócio (Prestador)")
     void deveCriarNegocio() throws Exception {
-        // CORREÇÃO: Removemos usuarioId do JSON pois agora é pego pelo Token (IDOR fix)
         String json = """
             {
                 "nome": "Barbearia E2E Test",
-                "categoria": "BARBEIRO"
+                "categoria": "BARBEIRO",
+                "latitude": -23.5505,
+                "longitude": -46.6333,
+                "enderecoCompleto": "Rua Teste, 123 - Sao Paulo, SP"
             }
             """;
 
@@ -285,7 +287,7 @@ public class EasyBizE2ETest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + tokenCliente)
                         .content(json))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("ABERTO"))
                 .andReturn();
 
@@ -436,7 +438,7 @@ public class EasyBizE2ETest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + tokenCliente)
                         .content(json))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         JsonNode response = objectMapper.readTree(result.getResponse().getContentAsString());
